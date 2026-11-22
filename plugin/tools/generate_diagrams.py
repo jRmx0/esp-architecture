@@ -113,7 +113,8 @@ def block(m):
 def subsystems(m):
     """Level 2: the processor holds one box per subsystem and one per bus; devices sit outside on
     their buses as in level 1b. Lines join a subsystem to the buses its components drive. No arrows
-    between subsystems: they relate by placement, and who calls whom is the organigram's job."""
+    between subsystems: they relate by placement, and who calls whom is the organigram's job.
+    Subsystems that drive no bus sit one column further in, away from the hardware."""
     hw = m.get("hardware", {})
     buses, devices = hw.get("buses", []), hw.get("devices", [])
     dev_buses = {d["id"]: bus_ids(d) for d in devices}
@@ -129,6 +130,10 @@ def subsystems(m):
     out += ["  end"] + [f"  {node(d['id'])}[{label(d.get('name', d['id']))}]" for d in devices]
     out += [f"  {node(s)} --- {node(b)}" for s, b in drives]
     out += [f"  {node(b)} --- {node(d['id'])}" for d in devices for b in bus_ids(d)]
+    edge = list(dict.fromkeys(s for s, _ in drives))
+    inner = [s["id"] for s in m["subsystems"] if s["id"] not in edge]
+    # invisible links, declared last so they shift no linkStyle index; spread over the edge column
+    out += [f"  {node(s)} ~~~ {node(edge[i % len(edge)])}" for i, s in enumerate(inner)] if edge else []
     out += ["  classDef bus fill:none,stroke:#888,stroke-dasharray:3 3"] if buses else []
     out += [f"  class {','.join(node(b['id']) for b in buses)} bus"] if buses else []
     out += ["  classDef device fill:none,stroke:#888",

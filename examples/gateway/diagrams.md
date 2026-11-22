@@ -99,6 +99,8 @@ flowchart LR
   n_gpio_board --- n_user_led
   n_uart2_board --- n_autopilot_board
   n_uart0_console --- n_ch9102
+  n_app ~~~ n_server_link
+  n_platform ~~~ n_cellular
   classDef bus fill:none,stroke:#888,stroke-dasharray:3 3
   class n_uart_modem,n_uart2_board,n_uart0_console,n_gpio_board bus
   classDef device fill:none,stroke:#888

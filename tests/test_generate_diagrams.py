@@ -158,6 +158,7 @@ class Render(unittest.TestCase):
         self.assertNotIn("classDef", block)
 
     def test_block_level2_subsystems(self):
+        self.assertNotIn("~~~", self.text)  # FULL's only subsystem drives a bus: no invisible links
         m = copy.deepcopy(FULL)
         m["subsystems"].append({"id": "storage", "description": "keeps data"})
         m["components"][1].update(subsystem="storage", hardware=["nor"])  # a device stands for its bus
@@ -174,6 +175,19 @@ class Render(unittest.TestCase):
         m["hardware"]["devices"].append({"id": "lcd", "bus": "spi2", "description": "display"})
         l2 = gd.render(m, "x").split("### Level 2: subsystems")[1].split("## Organigram")[0]
         self.assertIn("class n_spi2 shared", l2)  # amber, as in 1b
+
+    def test_block_level2_busless_subsystems_sit_inside(self):
+        m = copy.deepcopy(FULL)
+        m["subsystems"] += [{"id": "storage", "description": "keeps data"}, {"id": "logic", "description": "l"}]
+        m["components"][1]["subsystem"] = "storage"
+        m["components"].append({"id": "rules", "subsystem": "logic", "layer": "app", "description": "r"})
+        l2 = gd.render(m, "x").split("### Level 2: subsystems")[1].split("## Organigram")[0]
+        lines = [l.strip() for l in l2.split("```")[1].splitlines()]
+        self.assertEqual([l for l in lines if "~~~" in l], ["n_core ~~~ n_storage", "n_logic ~~~ n_storage"])
+        self.assertTrue(all("~~~" in l for l in lines[lines.index("n_core ~~~ n_storage"):]
+                            if "---" in l or "-->" in l))  # declared after every visible line
+        m["components"][1].pop("hardware")  # no subsystem drives a bus: no invisible links
+        self.assertNotIn("~~~", gd.render(m, "x"))
 
     def test_layers_stacked_in_manifest_order(self):
         layering = self.text.split("## Layering")[1]

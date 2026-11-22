@@ -1,0 +1,156 @@
+# Architecture rules for ESP-IDF projects. Public and in our own words.
+# Each rule's source is kept only in the maintainer's gitignored sources.local.yaml (see CLAUDE.md).
+# checked_by: the tool that enforces it, or `review` when a person or agent must judge it.
+# see: public references only (Espressif documentation).
+version: 1
+rules:
+  # --- Layers and dependencies -------------------------------------------------------------------
+  - id: RULE-001
+    area: dependencies
+    rule: "A component depends only on components in its own layer or a lower one, never on a higher one."
+    rationale: "Upper components direct lower ones, the way a manager directs a team. A lower component that reaches up couples the platform to the application, so neither can change or be reused alone."
+    checked_by: [validate_manifest, check_architecture]
+
+  - id: RULE-002
+    area: dependencies
+    rule: "Component dependencies form no cycle."
+    rationale: "The control structure is a hierarchy. In a cycle no component can be built, tested or replaced without the others, and the layers lose their meaning."
+    checked_by: [validate_manifest]
+
+  - id: RULE-003
+    area: dependencies
+    rule: "Each component is its own ESP-IDF component directory, and every source file belongs to exactly one component."
+    rationale: "ESP-IDF checks requirements per component directory, so only then does the build itself refuse an undeclared dependency. Code that shares a directory with other components can include anything they can."
+    checked_by: [check_architecture]
+    see:
+      - https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/build-system.html#component-requirements
+
+  - id: RULE-004
+    area: dependencies
+    rule: "A component declares in REQUIRES the components its public headers include, in PRIV_REQUIRES those only its sources include, and nothing the manifest does not allow."
+    rationale: "Private requirements stay out of the users' include path, so a dependency does not leak upward. Requirements the manifest does not allow are dependencies the design never made."
+    checked_by: [check_architecture]
+    see:
+      - https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/build-system.html#component-requirements
+
+  - id: RULE-005
+    area: dependencies
+    rule: "The main component lists its requirements explicitly."
+    rationale: "Without REQUIRES or PRIV_REQUIRES, ESP-IDF lets main use every component in the build, so nothing stops it from reaching any layer."
+    checked_by: [review]
+    see:
+      - https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/build-system.html#component-requirements
+
+  - id: RULE-006
+    area: dependencies
+    rule: "A component includes headers only from components it depends on, and only their public headers."
+    rationale: "The include is where a dependency becomes real. An include the design does not allow, or one into another component's internals, breaks encapsulation even when the build accepts it."
+    checked_by: [check_architecture, review]
+
+  # --- Hardware and drivers ----------------------------------------------------------------------
+  - id: RULE-010
+    area: hardware
+    rule: "The driver for a communication bus is separate from the driver for each device on it; device drivers sit on top of the bus driver."
+    rationale: "The bus and the chip change for different reasons. Kept apart, a new chip on the same bus, or the same chip on another bus, changes one driver."
+    checked_by: [review]
+
+  - id: RULE-011
+    area: hardware
+    rule: "All devices on one bus go through that bus's single driver, and sharing the bus is a recorded decision that says how contention is handled."
+    rationale: "A shared bus allows one transfer at a time and runs at the pace of its slowest device. Without one owner and a plan, transfers collide and timing becomes unpredictable."
+    checked_by: [generate_diagrams, review]
+
+  - id: RULE-012
+    area: hardware
+    rule: "A driver adapts its hardware to a small, uniform interface (open or init, close, read, write, and a control call), and higher components use only that interface."
+    rationale: "A driver is an adapter. With a stable interface the hardware, or the whole platform, can change below it while the code above stays the same. Stacked adapters cost a little memory and time; that is usually worth it."
+    checked_by: [review]
+
+  - id: RULE-013
+    area: hardware
+    rule: "Components are designed for the role of a part (external flash, display), not for one specific chip."
+    rationale: "The exact chips are likely to change during and after development. A component named and shaped after its role survives the swap."
+    checked_by: [review]
+
+  # --- Encapsulation and interfaces --------------------------------------------------------------
+  - id: RULE-020
+    area: interfaces
+    rule: "A component keeps its state private (file-scope static) and exposes it only through its interface; no mutable globals are shared between components."
+    rationale: "Shared globals let any file change any state, which is how tangled code starts. Private state can be changed, tested and reasoned about in one place."
+    checked_by: [review]
+
+  - id: RULE-021
+    area: interfaces
+    rule: "A component's interface is its public headers, listed in the manifest's interfaces; everything else is internal."
+    rationale: "A small declared interface is what lets a component be replaced, tested alone or handed to another developer without hidden coupling."
+    checked_by: [review]
+
+  - id: RULE-022
+    area: interfaces
+    rule: "A component initializes the components it depends on, and an init function is safe to call more than once."
+    rationale: "Each component then starts on its own, in any product that uses it. A repeatable init can also bring a module back to a known state after a partial failure."
+    checked_by: [review]
+
+  - id: RULE-023
+    area: interfaces
+    rule: "Interfaces between components pass as little data as possible, and each can be described in a few sentences."
+    rationale: "Little data and a short description mark a good boundary: the two sides can be built, tested and changed independently."
+    checked_by: [review]
+
+  - id: RULE-024
+    area: interfaces
+    rule: "The application logic takes its inputs and gives its outputs through one interface, so it can run on a host with recorded data."
+    rationale: "Separating the logic (model) from input and output (view) lets the algorithm be developed and regression-tested on a PC, away from the hardware."
+    checked_by: [review]
+
+  # --- Structure ---------------------------------------------------------------------------------
+  - id: RULE-030
+    area: structure
+    rule: "Components are grouped into a few subsystems, and the whole-system diagrams show subsystems; detail is drawn one level down."
+    rationale: "A whole-system drawing with every component loses the overall picture. Systems are made of subsystems, and each large box can be expanded in its own drawing."
+    checked_by: [validate_manifest, generate_diagrams]
+
+  - id: RULE-031
+    area: structure
+    rule: "A subsystem bundles components that are used together; every component has at least one user."
+    rationale: "Components always used together belong behind one interface. A grouping whose members do not interact is a bin, not a subsystem, and a component nobody uses is dead weight or a missing dependency."
+    checked_by: [review]
+
+  - id: RULE-032
+    area: structure
+    rule: "Combine components that only one other component uses when they change together; split a component that many others touch or that keeps growing."
+    rationale: "Fewer, cohesive modules make a simpler design. A box many others must touch carries the complexity of all its users and is the one likely to need splitting later."
+    checked_by: [review]
+
+  - id: RULE-033
+    area: structure
+    rule: "A resource used by several components or tasks has one owner, or a recorded decision on how access is shared."
+    rationale: "Every shared resource adds an interaction to keep in mind and is a common source of conflicts. Making the owner or the access rule explicit keeps it visible."
+    checked_by: [generate_diagrams, review]
+
+  # --- Tasks and interrupts ----------------------------------------------------------------------
+  - id: RULE-040
+    area: concurrency
+    rule: "An interrupt handler stays short; it captures the event and hands the work to a task (queue, task notification), and calls only interrupt-safe functions."
+    rationale: "Long handlers raise the latency of everything else. Calls that block or are not reentrant can deadlock or corrupt state when interrupted."
+    checked_by: [review]
+    see:
+      - https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/freertos_idf.html
+
+  - id: RULE-041
+    area: concurrency
+    rule: "Use an interrupt only when the timing needs it (a time-critical event, a rare event that is costly to poll, feeding a buffer); otherwise handle the event in a task."
+    rationale: "Interrupts cost overhead, make the system less deterministic and harder to debug, and tie code to the processor."
+    checked_by: [review]
+
+  - id: RULE-042
+    area: concurrency
+    rule: "Data shared between tasks, or between a task and an interrupt, is protected (mutex, queue, critical section), and passing messages is preferred to sharing memory."
+    rationale: "Unprotected shared memory gives race conditions, where the result depends on exact timing and fails rarely and unpredictably."
+    checked_by: [review]
+
+  - id: RULE-043
+    area: concurrency
+    rule: "Task and interrupt priorities follow the importance of the work, and less important work never holds a resource a more important task waits for."
+    rationale: "A medium-priority task can otherwise block a low-priority one that holds what a high-priority task needs: priority inversion."
+    checked_by: [review]

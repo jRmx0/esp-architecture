@@ -21,4 +21,5 @@ Goal and plan: [epic #1](https://github.com/jRmx0/esp-architecture/issues/1). Wo
 - Each rule's source and context go only in the gitignored `sources.local.yaml` (rule ID → source, location, context). Never `git add -f` it.
 - Public sources (Espressif docs URLs) may be cited in the repo.
 - Every rule must have a source: no rules from assumption.
+- Before a PR that changes `plugin/rules/rules.yaml`, run `python tools/check_sources.py` (needs your local `sources.local.yaml`).
 - The shipped plugin is `plugin/` (skills, hooks, tools go there); the repo root holds the marketplace, docs and dev files. Validate before a PR: `claude plugin validate --strict plugin` and `claude plugin validate --strict .claude-plugin/marketplace.json`.

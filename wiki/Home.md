@@ -8,11 +8,11 @@ AI agents that write ESP-IDF firmware tend to ignore architecture. The plugin ma
 
 ## 2. Current state
 
-The plugin installs in Claude Code and has no skills or hooks yet. It ships the manifest schema and its validator (§4), the checker that compares the code with the manifest (§5), the diagram generator (§6) and the records lint (§7). The skills and hooks are planned in the epic's sub-issues.
+The plugin installs in Claude Code and has no skills or hooks yet. It ships the manifest schema and its validator (§4), the checker that compares the code with the manifest (§5), the diagram generator (§6), the records lint (§7) and the rule catalog (§8). The skills and hooks are planned in the epic's sub-issues.
 
 ## 3. Rule sources
 
-Rules are public, in our own words, each with an ID and a rationale. Where a rule comes from (book, page, context) is kept only in each maintainer's local `sources.local.yaml`, which git ignores, so no copyrighted text or citation is published. Espressif documentation is cited openly.
+Rules are public, in our own words, each with an ID and a rationale. Where a rule comes from (book, page, context) is kept only in each maintainer's local `sources.local.yaml`, which git ignores, so no copyrighted text or citation is published. Espressif documentation is cited openly. The rules are in `plugin/rules/rules.yaml` (§8). Before a PR that touches them, a maintainer runs `python tools/check_sources.py`: it fails when a rule has no entry (source, location, context) in `sources.local.yaml` or an entry names no rule, and it skips when the file is absent, as in CI.
 
 ## 4. The manifest: `arch/architecture.yaml`
 
@@ -111,7 +111,7 @@ Every subsystem, layer and component in the manifest exists because of a decisio
 | File | Format |
 |---|---|
 | `arch/requirements.md` | One `## REQ-nnn Title` heading per requirement, followed by what is required and where it came from (an issue, a wiki page, the owner) |
-| `arch/decisions/DEC-nnn-slug.md` | One file per decision. First heading `# DEC-nnn Title`, then the sections `## Context` (the problem), `## Decision` (what was chosen), `## Alternatives` (what else was considered and why not) and `## Requirements` (the `REQ-nnn` IDs it serves) |
+| `arch/decisions/DEC-nnn-slug.md` | One file per decision. First heading `# DEC-nnn Title`, then the sections `## Context` (the problem), `## Decision` (what was chosen), `## Alternatives` (what else was considered and why not) and `## Requirements` (the `REQ-nnn` IDs it serves), and optionally `## Rules` (the `RULE-nnn` IDs it applies, §8) |
 
 The manifest cites them: `decisions` on each subsystem, layer and component, and optional `requirements` on a component.
 
@@ -127,6 +127,21 @@ Exit 0 when the records back the manifest, 1 with one error per line. It refuses
 - a cited `DEC-nnn` with no record, or a `REQ-nnn` not in `requirements.md`;
 - a record that misses a section, cites no requirement in its Requirements section, or cites one that does not exist;
 - a requirement that no record's Requirements section cites, so nothing in the design serves it;
+- a rule ID in a Rules section that is not in the catalog;
 - a record whose file name is not `DEC-nnn-slug.md` or whose first heading does not match it, and an ID used twice.
 
-Records will also cite rule IDs once the rule catalog exists ([#4](https://github.com/jRmx0/esp-architecture/issues/4)). The gateway example has no records: it is not a reviewed design, and the pilot (rmx-lt/rmx-mower-gateway#120) writes the first real ones.
+The gateway example has no records: it is not a reviewed design, and the pilot (rmx-lt/rmx-mower-gateway#120) writes the first real ones.
+
+## 8. Rule catalog
+
+`plugin/rules/rules.yaml` holds the architecture rules, each with an ID (`RULE-nnn`), an area, the rule, its rationale, `checked_by` (the tool that enforces it, or `review` when a person or agent must judge it) and, where public, Espressif links in `see`. Decision records cite the rules they apply (§7).
+
+| Area | Rules | Enforced by a tool |
+|---|---|---|
+| dependencies | 001 layers point down, 002 no cycles, 003 one ESP-IDF component per component, 004 REQUIRES/PRIV_REQUIRES match the design, 005 main lists its requirements, 006 includes only from dependencies | 001–004, 006 (validator, checker); 005 by review |
+| hardware | 010 bus driver apart from device drivers, 011 one driver per shared bus and a recorded sharing decision, 012 drivers as adapters with a uniform interface, 013 components named for the role, not the chip | 011 is flagged amber in the diagrams; the rest by review |
+| interfaces | 020 private state, 021 public headers are the interface, 022 a component initializes what it depends on, 023 small interfaces, 024 application logic testable on a host | review |
+| structure | 030 subsystems and levelled diagrams, 031 subsystems bundle what is used together, 032 combine or split by use, 033 shared resources have an owner | 030 (validator, generator), 033 amber in diagrams; 031 is planned as a check ([#15](https://github.com/jRmx0/esp-architecture/issues/15)) |
+| concurrency | 040 short interrupt handlers that hand work to tasks, 041 interrupts only when timing needs them, 042 shared data protected, 043 priorities follow importance | review |
+
+Rules come from published embedded-systems design guidance and the ESP-IDF documentation; the exact sources are in the maintainers' local map (§3).

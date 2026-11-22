@@ -4,7 +4,7 @@
 
 ```mermaid
 block-beta
-  columns 3
+  columns 12
   block:left
     columns 1
     space
@@ -12,7 +12,7 @@ block-beta
     n_sim7600["sim7600"]
     space
   end
-  block:chip
+  block:chip:10
     columns 10
     chip_title["<b>ESP32</b>"]:10
     n_uart0_console[/"uart0_console<br/>uart"/]
@@ -66,7 +66,7 @@ block-beta
 
 ```mermaid
 block-beta
-  columns 3
+  columns 12
   block:left
     columns 1
     space
@@ -74,7 +74,7 @@ block-beta
     n_sim7600["sim7600"]
     space
   end
-  block:chip
+  block:chip:10
     columns 10
     chip_title["<b>ESP32</b>"]:10
     n_uart0_console[/"uart0_console<br/>uart"/]

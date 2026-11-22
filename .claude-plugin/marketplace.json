@@ -1,0 +1,14 @@
+{
+  "name": "esp-architecture",
+  "description": "The esp-architecture plugin for ESP-IDF projects.",
+  "owner": {
+    "name": "jRmx0"
+  },
+  "plugins": [
+    {
+      "name": "esp-architecture",
+      "source": "./plugin",
+      "description": "Architecture as code for ESP-IDF projects: sourced rules, a blocking checker and generated diagrams."
+    }
+  ]
+}

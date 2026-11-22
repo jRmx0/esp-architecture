@@ -1,0 +1,2 @@
+# Private rule sources (rule ID -> source and context). Never commit: see CLAUDE.md.
+sources.local.yaml

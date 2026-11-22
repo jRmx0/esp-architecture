@@ -177,10 +177,6 @@
                 "type": "string",
                 "minLength": 1
               },
-              "planned": {
-                "description": "Not fitted or not driven yet; drawn dashed.",
-                "type": "boolean"
-              },
               "holds": {
                 "description": "What the device stores, shown in its box (e.g. firmware version, image data).",
                 "type": "array",

@@ -22,7 +22,7 @@ One file per project describes the architecture. The checker and the diagram gen
 |---|---|---|
 | `system` | Name and purpose | Every diagram's title |
 | `context` | `actors` (person, system, device) and `flows` between two parties: `system` (the device) and an actor, or two actors; a flow's `data` is an optional short label | Context diagram |
-| `hardware` | `processor` (the chip, e.g. ESP32; optional); `buses` inside the chip, each with an optional `peripheral` (e.g. UART2) that labels it; `devices`, each on one `bus` or a list of them (a modem on UART and GPIO), with optional `holds` (what it stores) and `planned: true` (not fitted or driven yet) | Block diagram |
+| `hardware` | `processor` (the chip, e.g. ESP32; optional); `buses` inside the chip, each with an optional `peripheral` (e.g. UART2) that labels it; `devices`, each on one `bus` or a list of them (a modem on UART and GPIO), with optional `holds` (what it stores) | Block diagram |
 | `layers` | Ordered from the top (application) to the bottom (platform) | Layering diagram |
 | `components` | Layer, `path` (the ESP-IDF component directory), `sources` (globs of the files it owns; default all sources under `path`), `depends_on` (other components), `idf_requires` (ESP-IDF or managed components), `hardware`, `interfaces` (public headers), `requirements` (`REQ-nnn`), `decisions` (`DEC-nnn`) | `depends_on` is the organigram |
 | `allow_sideways` | Whether a component may depend on one in its own layer (default true) | Validator |

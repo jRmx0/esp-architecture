@@ -55,20 +55,18 @@ class Render(unittest.TestCase):
 
     def test_block_level1_is_hardware_only(self):
         block = self.text.split("## Block")[1].split("## Organigram")[0]
-        self.assertIn("block-beta", block)
-        chip = block.split("block:chip:3")[1].split("\n  end")[0]
-        self.assertIn('chip_title["<b>demo</b>"]', chip)  # no processor: the system name
-        self.assertIn("n_spi2[/", chip)
+        self.assertIn("flowchart LR", block)
+        self.assertIn('cpu_box["<b>demo</b>"]', block)  # no processor: the system name
+        self.assertIn('n_nor["nor"]', block)
+        self.assertIn('n_nor ---|"SPI"| cpu_box', block)  # no peripheral: the kind in capitals
+        self.assertNotIn("n_spi2", block)  # buses are lines, not boxes
         self.assertNotIn("n_ui", block)
         self.assertNotIn("n_flash", block)
-        left = block.split("block:left")[1].split("\n  end")[0]
-        self.assertIn('n_nor["nor<br/>&nbsp;"]', left)  # padded to the bus's two lines
-        self.assertIn("n_spi2 --- n_nor", block)
-        self.assertNotIn("Red buses", self.text)
+        self.assertNotIn("Red lines", self.text)
         org = self.text.split("## Organigram")[1].split("## Layering")[0]
         self.assertIn("| `ui_task` | ui | 3 | 4096 |", org)
 
-    def test_block_sides_processor_holds_and_shared_bus(self):
+    def test_block_sides_holds_and_shared_bus(self):
         m = copy.deepcopy(FULL)
         m["hardware"] = {
             "processor": "ESP32-S3",
@@ -79,18 +77,15 @@ class Render(unittest.TestCase):
                         {"id": "imu", "bus": "i2c0", "description": "i"}]}
         text = gd.render(m, "x")
         block = text.split("## Block")[1].split("```")[1]
-        chip = block.split("block:chip:3")[1].split("\n  end")[0].splitlines()[2:]
-        self.assertEqual([l.strip().split("[")[0] for l in chip],
-                         ["n_spi2", "chip_title", "n_i2c0", "space", "space", "space"])
-        left = block.split("block:left")[1].split("\n  end")[0]
-        self.assertIn('n_nor["nor<br/>fonts, images"]', left)
-        self.assertLess(left.index("n_nor"), left.index("n_lcd"))
-        self.assertIn("n_imu[", block.split("block:right")[1])
-        self.assertIn('chip_title["<b>ESP32-S3</b>"]', block)
-        self.assertIn("class n_spi2 shared", block)
-        self.assertIn("Red buses: more than one device (spi2)", text)
+        self.assertIn('cpu_box["<b>ESP32-S3</b>"]', block)
+        self.assertIn('n_nor["nor<br/>fonts, images"]', block)
+        # devices sharing a bus stay on one side (left); the other group goes right
+        edges = [l.strip() for l in block.splitlines() if "---|" in l]
+        self.assertEqual(edges, ['n_nor ---|"SPI"| cpu_box', 'n_lcd ---|"SPI"| cpu_box', 'cpu_box ---|"I2C"| n_imu'])
+        self.assertIn("linkStyle 0,1 stroke:#d33", block)
+        self.assertIn("Red lines: a bus with more than one device (spi2)", text)
 
-    def test_block_multi_bus_device_peripheral_and_planned(self):
+    def test_block_multi_bus_device_and_peripheral(self):
         m = copy.deepcopy(FULL)
         m["hardware"] = {
             "buses": [{"id": "u1", "kind": "uart", "peripheral": "UART1", "description": "u"},
@@ -98,34 +93,27 @@ class Render(unittest.TestCase):
                       {"id": "pins", "kind": "gpio", "description": "g"}],
             "devices": [{"id": "modem", "bus": ["u1", "pins"], "description": "m"},
                         {"id": "led", "bus": "pins", "description": "l"},
-                        {"id": "mcu", "bus": "u2", "planned": True, "description": "p"}]}
-        text = gd.render(m, "x")
-        block = text.split("## Block")[1].split("```")[1]
-        self.assertIn('n_u1[/"UART1<br/>u1"/]', block)
-        self.assertIn('n_u2[/"UART<br/>u2"/]', block)  # no peripheral: the kind in capitals
-        self.assertIn("n_u1 --- n_modem", block)
-        self.assertIn("n_pins --- n_modem", block)
-        # u1 and pins share the modem, so both sit on one edge (the larger group goes left)
-        chip = [l.strip().split("[")[0] for l in block.split("block:chip:3")[1].split("\n  end")[0].splitlines()[2:]]
-        self.assertEqual(chip, ["n_u1", "chip_title", "n_u2", "n_pins", "space", "space"])
-        left = block.split("block:left")[1].split("\n  end")[0]
-        self.assertLess(left.index("n_modem"), left.index("n_led"))
-        self.assertIn("class n_mcu planned", block)
-        self.assertIn("class n_modem,n_led device", block)
-        self.assertNotIn("shared", block)  # two devices on GPIO pins do not contend
+                        {"id": "mcu", "bus": "u2", "description": "p"}]}
+        block = gd.render(m, "x").split("## Block")[1].split("```")[1]
+        self.assertIn('n_modem ---|"UART1"| cpu_box', block)
+        self.assertIn('n_modem ---|"GPIO"| cpu_box', block)
+        self.assertIn('cpu_box ---|"GPIO"| n_led', block)
+        self.assertIn('cpu_box ---|"UART"| n_mcu', block)
+        self.assertIn("class n_modem,n_led,n_mcu device", block)
+        self.assertNotIn("linkStyle", block)  # two devices on GPIO pins do not contend
 
-    def test_block_holds_wrap_and_every_cell_is_padded(self):
+    def test_block_holds_wrap_between_items(self):
         m = copy.deepcopy(FULL)
         m["hardware"]["devices"][0]["holds"] = ["2 OTA slots", "NVS", "core dump", "storage"]
         block = gd.render(m, "x").split("## Block")[1].split("```")[1]
         self.assertIn('n_nor["nor<br/>2 OTA slots, NVS,<br/>core dump, storage"]', block)
-        self.assertIn('n_spi2[/"SPI<br/>spi2<br/>&nbsp;"/]', block)
 
     def test_block_without_hardware_still_names_the_processor(self):
         m = copy.deepcopy(FULL)
         del m["hardware"]
         block = gd.render(m, "x").split("## Block")[1].split("```")[1]
-        self.assertIn('chip_title["<b>demo</b>"]', block)
+        self.assertIn('cpu_box["<b>demo</b>"]', block)
+        self.assertNotIn("classDef", block)
 
     def test_layers_stacked_in_manifest_order(self):
         layering = self.text.split("## Layering")[1]

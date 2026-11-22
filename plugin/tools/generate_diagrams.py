@@ -23,7 +23,6 @@ BEGIN = "<!-- esp-architecture:diagrams begin: generated from {src} by generate_
 END = "<!-- esp-architecture:diagrams end -->"
 SECTION = re.compile(r"<!-- esp-architecture:diagrams begin.*?<!-- esp-architecture:diagrams end -->", re.S)
 RED = "stroke:#d33,stroke-width:2px"
-NBSP = "&nbsp;"
 HOLDS_WIDTH = 22  # characters per line of a device's holds in the block diagram
 PER_LINE = 6  # components per line in the layering grid
 
@@ -61,80 +60,47 @@ def bus_ids(device):
 
 
 def block(m):
-    """Level 1, hardware only: the processor with its buses on its left and right edges, each device
-    outside beside its bus. Components come in lower levels."""
-    # block-beta gives every grid column the same width, so the processor is one block spanning
-    # three outer columns and the device columns beside it stay narrow.
+    """Level 1, hardware only: one processor box and each device outside it, joined by one line per
+    bus, labelled with the bus's peripheral. Buses drawn inside the processor, as driver code, and
+    components come in lower levels."""
+    # A flowchart, not block-beta: block-beta draws no edge labels and pins boxes to a grid.
+    # In LR, a device on an edge `device --- processor` sits left, `processor --- device` right.
     hw = m.get("hardware", {})
     buses, devices = hw.get("buses", []), hw.get("devices", [])
     on = {b["id"]: [d for d in devices if b["id"] in bus_ids(d)] for b in buses}
-    # Buses joined by a device stay on one edge, so its lines don't cross the chip. Groups go
-    # largest first to the edge with fewer rows; a device sits beside the first of its buses.
-    groups, seen = [], set()
-    for b in buses:
-        if b["id"] in seen:
-            continue
-        group, todo = [], [b]
-        while todo:
-            x = todo.pop(0)
-            if x["id"] not in seen:
-                seen.add(x["id"])
-                group.append(x)
-                todo += [y for y in buses for d in on[x["id"]] if y["id"] in bus_ids(d)]
-        group.sort(key=buses.index)
-        cells, placed = [], set()
-        for x in group:
-            new = [d for d in on[x["id"]] if d["id"] not in placed]
-            placed.update(d["id"] for d in new)
-            cells += [(x, new[0] if new else None)] + [(None, d) for d in new[1:]]
-        groups.append(cells)
-    rows = ([], [])
-    for cells in sorted(groups, key=len, reverse=True):
-        rows[len(rows[1]) < len(rows[0])].extend(cells)
-    height = max(1, *map(len, rows))  # one row at least, for the processor's name
-    rows = [r + [(None, None)] * (height - len(r)) for r in rows]
-    title = hw.get("processor", m["system"]["name"])
+    tag = {b["id"]: b.get("peripheral", b["kind"].upper()) for b in buses}
+    # Devices sharing their first bus stay on one side; groups go largest first to the side with
+    # fewer lines, so the processor stays in the middle.
+    groups = {}
+    for d in devices:
+        groups.setdefault(bus_ids(d)[0], []).append(d)
+    sides, count = ([], []), [0, 0]
+    for g in sorted(groups.values(), key=lambda g: -sum(len(bus_ids(d)) for d in g)):
+        i = count[1] < count[0]
+        sides[i].extend(g)
+        count[i] += sum(len(bus_ids(d)) for d in g)
 
-    # The side columns are separate grids, so devices line up with their buses only while every
-    # cell has the same number of lines; short cells are padded with no-break spaces. Holds wrap,
-    # because every column is as wide as the widest cell in the whole grid.
     def wrap(items):  # breaks only between items: textwrap does not split at a no-break space
-        return [s.replace("\xa0", " ") for s in textwrap.wrap(", ".join(i.replace(" ", "\xa0") for i in items), HOLDS_WIDTH)]
+        return [s.replace(" ", " ") for s in textwrap.wrap(", ".join(i.replace(" ", " ") for i in items), HOLDS_WIDTH)]
 
-    text = {d["id"]: [d["id"]] + wrap(d.get("holds", [])) for d in devices}
-    text.update({b["id"]: [b.get("peripheral", b["kind"].upper()), b["id"]] for b in buses})
-    lines = max(map(len, text.values()), default=1)
-
-    def cell(i):
-        return label(*text[i], *[NBSP] * (lines - len(text[i])))
-
-    def dev(d):
-        return f"    {node(d['id'])}[{cell(d['id'])}]" if d else "    space"
-
-    def bus(b):
-        return f"    {node(b['id'])}[/{cell(b['id'])}/]" if b else "    space"
-
-    out = ["block-beta", "  columns 5", "  block:left", "    columns 1"]
-    out += [dev(d) for _, d in rows[0]]
-    out += ["  end", "  block:chip:3", "    columns 3"]
-    for n, ((lb, _), (rb, _)) in enumerate(zip(*rows)):
-        # the processor's name sits in the empty middle column, not a row of its own
-        middle = f"    chip_title[{label('<b>' + title + '</b>')}]" if n == 0 else "    space"
-        out += [bus(lb), middle, bus(rb)]
-    out += ["  end", "  block:right", "    columns 1"]
-    out += [dev(d) for _, d in rows[1]]
-    out += ["  end", "  style left fill:none,stroke:none", "  style right fill:none,stroke:none"]
-    out += [f"  {node(b)} --- {node(d['id'])}" for d in devices for b in bus_ids(d)]
-    out += ["  classDef title fill:none,stroke:none", "  classDef device fill:none,stroke:#888",
-            "  classDef planned fill:none,stroke:#888,stroke-dasharray:4 3", "  class chip_title title"]
-    for cls, ds in (("device", [d for d in devices if not d.get("planned")]),
-                    ("planned", [d for d in devices if d.get("planned")])):
-        if ds:
-            out.append(f"  class {','.join(node(d['id']) for d in ds)} {cls}")
+    # cpu_box has no n_ prefix, so no device id can collide with it
+    out = ["flowchart LR", f"  cpu_box[{label('<b>' + hw.get('processor', m['system']['name']) + '</b>')}]"]
+    out += [f"  {node(d['id'])}[{label(d['id'], *wrap(d.get('holds', [])))}]" for d in devices]
     # GPIO lines are separate pins, so several devices on GPIO do not contend
     shared = [b["id"] for b in buses if len(on[b["id"]]) > 1 and b["kind"] != "gpio"]
-    if shared:
-        out += [f"  classDef shared {RED}", f"  class {','.join(node(b) for b in shared)} shared"]
+    red, n = [], 0
+    for side, ds in enumerate(sides):
+        for d in ds:
+            for b in bus_ids(d):
+                if b in shared:
+                    red.append(str(n))
+                n += 1
+                ends = (node(d["id"]), "cpu_box") if side == 0 else ("cpu_box", node(d["id"]))
+                out.append(f"  {ends[0]} ---|{label(tag[b])}| {ends[1]}")
+    if devices:
+        out += ["  classDef device fill:none,stroke:#888", f"  class {','.join(node(d['id']) for d in devices)} device"]
+    if red:
+        out.append(f"  linkStyle {','.join(red)} {RED}")
     return fence(out), shared
 
 
@@ -197,12 +163,13 @@ def render(m, src, level=2):
             "against contention." if shared else "")
     note += f" Red arrows: {upward} upward, which the layers forbid." if upward else ""
     blk, shared_buses = block(m)
-    bnote = (f" Red buses: more than one device ({', '.join(shared_buses)}); they contend for the bus."
+    bnote = (f" Red lines: a bus with more than one device ({', '.join(shared_buses)}); a shared resource needs care "
+             "against contention."
              if shared_buses else "")
     return "\n".join([
         BEGIN.format(src=src), "",
         f"{h} Context", "", "The device and the world around it.", "", context(m), "",
-        f"{h} Block", "", "Level 1, hardware: the processor, its buses on its edges and the devices outside on them."
+        f"{h} Block", "", "Level 1, hardware: the processor and the devices outside it, one line per bus."
         + bnote, "", blk, "",
         f"{h} Organigram", "", "Who calls whom, from the top down (`depends_on`)." + note, "", org + tasks(m), "",
         f"{h} Layering", "", "Layers from the top (application) to the bottom (platform).", "", layering(m), "",

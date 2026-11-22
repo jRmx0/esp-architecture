@@ -24,52 +24,27 @@ flowchart LR
 
 ## Block
 
-Level 1, hardware: the processor, its buses on its edges and the devices outside on them. Red buses: more than one device (spi_mem); they contend for the bus.
+Level 1, hardware: the processor and the devices outside it, one line per bus. Red lines: a bus with more than one device (spi_mem); a shared resource needs care against contention.
 
 ```mermaid
-block-beta
-  columns 5
-  block:left
-    columns 1
-    n_sim7600["sim7600<br/>&nbsp;<br/>&nbsp;"]
-    n_user_led["user_led<br/>&nbsp;<br/>&nbsp;"]
-    n_autopilot_board["autopilot_board<br/>&nbsp;<br/>&nbsp;"]
-  end
-  block:chip:3
-    columns 3
-    n_uart_modem[/"UART1<br/>uart_modem<br/>&nbsp;"/]
-    chip_title["<b>ESP32</b>"]
-    n_spi_mem[/"SPI0/1<br/>spi_mem<br/>&nbsp;"/]
-    n_gpio_board[/"GPIO<br/>gpio_board<br/>&nbsp;"/]
-    space
-    space
-    n_uart2_board[/"UART2<br/>uart2_board<br/>&nbsp;"/]
-    space
-    n_uart0_console[/"UART0<br/>uart0_console<br/>&nbsp;"/]
-  end
-  block:right
-    columns 1
-    n_flash["flash<br/>2 OTA slots, NVS,<br/>core dump, storage"]
-    n_psram["psram<br/>large heap buffers<br/>&nbsp;"]
-    n_ch9102["ch9102<br/>&nbsp;<br/>&nbsp;"]
-  end
-  style left fill:none,stroke:none
-  style right fill:none,stroke:none
-  n_uart_modem --- n_sim7600
-  n_gpio_board --- n_sim7600
-  n_gpio_board --- n_user_led
-  n_uart2_board --- n_autopilot_board
-  n_uart0_console --- n_ch9102
-  n_spi_mem --- n_flash
-  n_spi_mem --- n_psram
-  classDef title fill:none,stroke:none
+flowchart LR
+  cpu_box["<b>ESP32</b>"]
+  n_sim7600["sim7600"]
+  n_user_led["user_led"]
+  n_autopilot_board["autopilot_board"]
+  n_ch9102["ch9102"]
+  n_flash["flash<br/>2 OTA slots, NVS,<br/>core dump, storage"]
+  n_psram["psram<br/>large heap buffers"]
+  n_sim7600 ---|"UART1"| cpu_box
+  n_sim7600 ---|"GPIO"| cpu_box
+  n_user_led ---|"GPIO"| cpu_box
+  n_ch9102 ---|"UART0"| cpu_box
+  cpu_box ---|"SPI0/1"| n_flash
+  cpu_box ---|"SPI0/1"| n_psram
+  cpu_box ---|"UART2"| n_autopilot_board
   classDef device fill:none,stroke:#888
-  classDef planned fill:none,stroke:#888,stroke-dasharray:4 3
-  class chip_title title
-  class n_sim7600,n_user_led,n_ch9102,n_flash,n_psram device
-  class n_autopilot_board planned
-  classDef shared stroke:#d33,stroke-width:2px
-  class n_spi_mem shared
+  class n_sim7600,n_user_led,n_autopilot_board,n_ch9102,n_flash,n_psram device
+  linkStyle 4,5 stroke:#d33,stroke-width:2px
 ```
 
 ## Organigram

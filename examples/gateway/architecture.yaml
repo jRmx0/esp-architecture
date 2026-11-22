@@ -41,7 +41,7 @@ hardware:
   devices:
     - { id: sim7600, bus: [uart_modem, gpio_board], description: SIM7600G-H LTE modem }
     - { id: user_led, bus: gpio_board, description: Blue user LED on GPIO12 }
-    - { id: autopilot_board, bus: uart2_board, planned: true, description: "Mower autopilot board (link planned, rmx-mower-gateway#62)" }
+    - { id: autopilot_board, bus: uart2_board, description: "Mower autopilot board (link planned, rmx-mower-gateway#62)" }
     - { id: ch9102, bus: uart0_console, description: USB-UART bridge to the provisioning PC }
     - { id: flash, bus: spi_mem, description: "16 MB QIO flash (partitions.csv)", holds: [2 OTA slots, NVS, core dump, storage] }
     - { id: psram, bus: spi_mem, description: "8 MB PSRAM, SPIRAM_USE_MALLOC", holds: [large heap buffers] }

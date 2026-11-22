@@ -106,6 +106,9 @@ class Rejects(unittest.TestCase):
             d["hardware"]["devices"][0]["holds"] = ["version", "image data"]
         self.assertEqual(vm.validate(m(a=edit)), [])
 
+    def test_device_planned_is_refused(self):
+        self.check(m(a=lambda d: d["hardware"]["devices"][0].update(planned=True)), "planned")
+
     def test_holds_must_be_a_list(self):
         self.check(m(a=lambda d: d["hardware"]["devices"][0].update(holds="fonts")), "holds")
 

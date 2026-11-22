@@ -132,8 +132,10 @@ def subsystems(m):
     out += [f"  {node(b)} --- {node(d['id'])}" for d in devices for b in bus_ids(d)]
     edge = list(dict.fromkeys(s for s, _ in drives))
     inner = [s["id"] for s in m["subsystems"] if s["id"] not in edge]
-    # invisible links, declared last so they shift no linkStyle index; spread over the edge column
-    out += [f"  {node(s)} ~~~ {node(edge[i % len(edge)])}" for i, s in enumerate(inner)] if edge else []
+    # invisible links, declared last so they shift no linkStyle index. Every edge subsystem needs one
+    # coming in, or the layout puts it in the first column with the inner ones.
+    pairs = max(len(inner), len(edge)) if inner and edge else 0
+    out += [f"  {node(inner[i % len(inner)])} ~~~ {node(edge[i % len(edge)])}" for i in range(pairs)]
     out += ["  classDef bus fill:none,stroke:#888,stroke-dasharray:3 3"] if buses else []
     out += [f"  class {','.join(node(b['id']) for b in buses)} bus"] if buses else []
     out += ["  classDef device fill:none,stroke:#888",

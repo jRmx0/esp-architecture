@@ -186,7 +186,16 @@ class Render(unittest.TestCase):
         self.assertEqual([l for l in lines if "~~~" in l], ["n_core ~~~ n_storage", "n_logic ~~~ n_storage"])
         self.assertTrue(all("~~~" in l for l in lines[lines.index("n_core ~~~ n_storage"):]
                             if "---" in l or "-->" in l))  # declared after every visible line
-        m["components"][1].pop("hardware")  # no subsystem drives a bus: no invisible links
+        m["components"][1]["subsystem"] = "core"  # two edge subsystems, one inner: each edge one gets a link
+        m["subsystems"].append({"id": "radio", "description": "r"})
+        m["hardware"]["buses"].append({"id": "uart1", "kind": "uart", "description": "u"})
+        m["components"].append({"id": "lte", "subsystem": "radio", "layer": "drivers", "description": "l",
+                                "hardware": ["uart1"]})
+        m["subsystems"] = [x for x in m["subsystems"] if x["id"] != "storage"]
+        l2 = gd.render(m, "x").split("### Level 2: subsystems")[1].split("## Organigram")[0]
+        self.assertEqual([l.strip() for l in l2.splitlines() if "~~~" in l], ["n_logic ~~~ n_core", "n_logic ~~~ n_radio"])
+        for c in m["components"]:
+            c.pop("hardware", None)  # no subsystem drives a bus: no invisible links
         self.assertNotIn("~~~", gd.render(m, "x"))
 
     def test_layers_stacked_in_manifest_order(self):

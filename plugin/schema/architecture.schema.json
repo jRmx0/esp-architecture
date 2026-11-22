@@ -116,6 +116,11 @@
               "id": {
                 "$ref": "#/$defs/id"
               },
+              "peripheral": {
+                "description": "The peripheral instance that labels the bus, e.g. UART2 or SPI0/1 (default: the kind in capitals).",
+                "type": "string",
+                "minLength": 1
+              },
               "kind": {
                 "enum": [
                   "uart",
@@ -153,11 +158,28 @@
                 "$ref": "#/$defs/id"
               },
               "bus": {
-                "$ref": "#/$defs/id"
+                "description": "The bus it is wired to, or a list when it uses several (e.g. a modem on UART and GPIO).",
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/id"
+                  },
+                  {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "$ref": "#/$defs/id"
+                    }
+                  }
+                ]
               },
               "description": {
                 "type": "string",
                 "minLength": 1
+              },
+              "planned": {
+                "description": "Not fitted or not driven yet; drawn dashed.",
+                "type": "boolean"
               },
               "holds": {
                 "description": "What the device stores, shown in its box (e.g. firmware version, image data).",

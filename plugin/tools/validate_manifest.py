@@ -47,8 +47,9 @@ def validate(manifest):
     errors += [f"task {t}: id used twice" for t in sorted({t for t in task_ids if task_ids.count(t) > 1})]
 
     for d in hw.get("devices", []):
-        if d["bus"] not in buses:
-            errors.append(f"device {d['id']}: bus {d['bus']} is not declared")
+        for b in [d["bus"]] if isinstance(d["bus"], str) else d["bus"]:
+            if b not in buses:
+                errors.append(f"device {d['id']}: bus {b} is not declared")
     for f in ctx.get("flows", []):
         ends = {f["from"], f["to"]}
         for e in ends - {"system"}:

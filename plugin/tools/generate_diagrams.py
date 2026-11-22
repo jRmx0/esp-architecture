@@ -52,6 +52,11 @@ def context(m):
     return fence(out)
 
 
+def bus_ids(device):
+    """A device's `bus` is one bus id or a list of them."""
+    return [device["bus"]] if isinstance(device["bus"], str) else device["bus"]
+
+
 def block(m):
     """Level 1, hardware only: the processor with its buses on its left and right edges, each device
     outside beside its bus. Components come in lower levels."""
@@ -59,35 +64,57 @@ def block(m):
     # three outer columns and the device columns beside it stay narrow.
     hw = m.get("hardware", {})
     buses, devices = hw.get("buses", []), hw.get("devices", [])
-    on = {b["id"]: [d for d in devices if d["bus"] == b["id"]] for b in buses}
-    sides = (buses[0::2], buses[1::2])  # alternate so both edges fill evenly
-    # one row per device (at least one per bus), so a shared bus spans its devices' rows
-    rows = [[(b, d) for b in side for d in (on[b["id"]] or [None])] for side in sides]
-    height = max(len(r) for r in rows) if buses else 0
+    on = {b["id"]: [d for d in devices if b["id"] in bus_ids(d)] for b in buses}
+    # Buses joined by a device stay on one edge, so its lines don't cross the chip. Groups go
+    # largest first to the edge with fewer rows; a device sits beside the first of its buses.
+    groups, seen = [], set()
+    for b in buses:
+        if b["id"] in seen:
+            continue
+        group, todo = [], [b]
+        while todo:
+            x = todo.pop(0)
+            if x["id"] not in seen:
+                seen.add(x["id"])
+                group.append(x)
+                todo += [y for y in buses for d in on[x["id"]] if y["id"] in bus_ids(d)]
+        group.sort(key=buses.index)
+        cells, placed = [], set()
+        for x in group:
+            new = [d for d in on[x["id"]] if d["id"] not in placed]
+            placed.update(d["id"] for d in new)
+            cells += [(x, new[0] if new else None)] + [(None, d) for d in new[1:]]
+        groups.append(cells)
+    rows = ([], [])
+    for cells in sorted(groups, key=len, reverse=True):
+        rows[len(rows[1]) < len(rows[0])].extend(cells)
+    height = max(len(r) for r in rows)
     rows = [r + [(None, None)] * (height - len(r)) for r in rows]
     title = hw.get("processor", m["system"]["name"])
 
     def dev(d):
         return f"    {node(d['id'])}[{label(d['id'], *d.get('holds', []))}]" if d else "    space"
 
-    def bus(b, d):
-        first = b and (d is None or on[b["id"]][0] is d)
-        return f"    {node(b['id'])}[/{label(b['id'], b['kind'])}/]" if first else "    space"
+    def bus(b):
+        return f"    {node(b['id'])}[/{label(b.get('peripheral', b['kind'].upper()))}/]" if b else "    space"
 
     out = ["block-beta", "  columns 5", "  block:left", "    columns 1", "    space"]
     out += [dev(d) for _, d in rows[0]]
     out += ["  end", "  block:chip:3", "    columns 3", f"    chip_title[{label('<b>' + title + '</b>')}]:3"]
-    for (lb, ld), (rb, rd) in zip(*rows):
-        out += [bus(lb, ld), "    space", bus(rb, rd)]
+    for (lb, _), (rb, _) in zip(*rows):
+        out += [bus(lb), "    space", bus(rb)]
     out += ["  end", "  block:right", "    columns 1", "    space"]
     out += [dev(d) for _, d in rows[1]]
     out += ["  end", "  style left fill:none,stroke:none", "  style right fill:none,stroke:none"]
-    out += [f"  {node(d['bus'])} --- {node(d['id'])}" for d in devices]
-    out += ["  classDef title fill:none,stroke:none", "  classDef device fill:none,stroke:#888,stroke-dasharray:4 3",
-            "  class chip_title title"]
-    if devices:
-        out.append(f"  class {','.join(node(d['id']) for d in devices)} device")
-    shared = [b for b, ds in on.items() if len(ds) > 1]
+    out += [f"  {node(b)} --- {node(d['id'])}" for d in devices for b in bus_ids(d)]
+    out += ["  classDef title fill:none,stroke:none", "  classDef device fill:none,stroke:#888",
+            "  classDef planned fill:none,stroke:#888,stroke-dasharray:4 3", "  class chip_title title"]
+    for cls, ds in (("device", [d for d in devices if not d.get("planned")]),
+                    ("planned", [d for d in devices if d.get("planned")])):
+        if ds:
+            out.append(f"  class {','.join(node(d['id']) for d in ds)} {cls}")
+    # GPIO lines are separate pins, so several devices on GPIO do not contend
+    shared = [b["id"] for b in buses if len(on[b["id"]]) > 1 and b["kind"] != "gpio"]
     if shared:
         out += [f"  classDef shared {RED}", f"  class {','.join(node(b) for b in shared)} shared"]
     return fence(out), shared

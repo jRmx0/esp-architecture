@@ -22,7 +22,7 @@ One file per project describes the architecture. The checker and the diagram gen
 |---|---|---|
 | `system` | Name and purpose | Every diagram's title |
 | `context` | `actors` (person, system, device) and `flows` between two parties: `system` (the device) and an actor, or two actors; a flow's `data` is an optional short label | Context diagram |
-| `hardware` | `processor` (the chip, e.g. ESP32; optional), `buses` inside the chip, `devices` on a bus, each with an optional `holds` list (what it stores) | Block diagram |
+| `hardware` | `processor` (the chip, e.g. ESP32; optional); `buses` inside the chip, each with an optional `peripheral` (e.g. UART2) that labels it; `devices`, each on one `bus` or a list of them (a modem on UART and GPIO), with optional `holds` (what it stores) and `planned: true` (not fitted or driven yet) | Block diagram |
 | `layers` | Ordered from the top (application) to the bottom (platform) | Layering diagram |
 | `components` | Layer, `path` (the ESP-IDF component directory), `sources` (globs of the files it owns; default all sources under `path`), `depends_on` (other components), `idf_requires` (ESP-IDF or managed components), `hardware`, `interfaces` (public headers), `requirements` (`REQ-nnn`), `decisions` (`DEC-nnn`) | `depends_on` is the organigram |
 | `allow_sideways` | Whether a component may depend on one in its own layer (default true) | Validator |
@@ -38,7 +38,7 @@ python plugin/tools/validate_manifest.py arch/architecture.yaml
 Exit 0 when valid, 1 with one error per line. Besides the schema it checks:
 
 - every id is unique across layers, components, actors, buses and devices; `system` is reserved
-- every reference exists: a component's layer, `depends_on`, `hardware`; a device's bus; a flow's actor; a task's or ISR's component
+- every reference exists: a component's layer, `depends_on`, `hardware`; each of a device's buses; a flow's actor; a task's or ISR's component
 - dependencies go down or sideways, never up; sideways only with `allow_sideways`
 - no dependency cycles
 
@@ -90,7 +90,7 @@ Writes four Mermaid diagrams, which GitHub renders, into a marked section of `--
 | Diagram | Drawn from | Shows |
 |---|---|---|
 | Context | `system`, `context` | How the device fits into the world: the device as one box, the actors around it and the flows between them, including flows between two actors. Boxes hold names only (descriptions stay in the manifest); an arrow carries its flow's short `data` label, or none. |
-| Block | `hardware` | Level 1, hardware only (Mermaid `block-beta`): the processor box titled with `hardware.processor` (or the system name), its buses on its left and right edges (alternating), each device outside beside its bus with its `holds` lines. A bus with more than one device is red: its devices contend for it. Software components come in lower levels (subsystems, then one view per subsystem), planned in issue #6. |
+| Block | `hardware` | Level 1, hardware only (Mermaid `block-beta`): the processor box titled with `hardware.processor` (or the system name) and its buses on its left and right edges, each labelled with its `peripheral` (or the kind in capitals). Each device sits outside beside its first bus, with one line per bus it uses and its `holds` lines; solid, or dashed when `planned`. Buses joined by a device stay on one edge; such groups go largest first to the edge with fewer rows. A bus with more than one device is red (they contend for it), except GPIO, whose pins are separate. Software components come in lower levels (subsystems, then one view per subsystem), planned in issue #6. |
 | Organigram | `depends_on`, `tasks`, `isrs` | Who calls whom from the top down. Red box: a component used by more than one other (a shared resource). Red arrow: an upward dependency. A task table follows. |
 | Layering | `layers`, `components` | A grid (Mermaid `block-beta`): one row per layer from the top, the layer id, then its components, wrapping after 6. A table below gives each layer's description. |
 

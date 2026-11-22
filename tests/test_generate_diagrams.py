@@ -90,6 +90,30 @@ class Render(unittest.TestCase):
         self.assertIn("class n_spi2 shared", block)
         self.assertIn("Red buses: more than one device (spi2)", text)
 
+    def test_block_multi_bus_device_peripheral_and_planned(self):
+        m = copy.deepcopy(FULL)
+        m["hardware"] = {
+            "buses": [{"id": "u1", "kind": "uart", "peripheral": "UART1", "description": "u"},
+                      {"id": "u2", "kind": "uart", "description": "u"},
+                      {"id": "pins", "kind": "gpio", "description": "g"}],
+            "devices": [{"id": "modem", "bus": ["u1", "pins"], "description": "m"},
+                        {"id": "led", "bus": "pins", "description": "l"},
+                        {"id": "mcu", "bus": "u2", "planned": True, "description": "p"}]}
+        text = gd.render(m, "x")
+        block = text.split("## Block")[1].split("```")[1]
+        self.assertIn('n_u1[/"UART1"/]', block)
+        self.assertIn('n_u2[/"UART"/]', block)  # no peripheral: the kind in capitals
+        self.assertIn("n_u1 --- n_modem", block)
+        self.assertIn("n_pins --- n_modem", block)
+        # u1 and pins share the modem, so both sit on one edge (the larger group goes left)
+        chip = [l.strip().split("[")[0] for l in block.split("block:chip:3")[1].split("\n  end")[0].splitlines()[3:]]
+        self.assertEqual(chip, ["n_u1", "space", "n_u2", "n_pins", "space", "space"])
+        left = block.split("block:left")[1].split("\n  end")[0]
+        self.assertLess(left.index("n_modem"), left.index("n_led"))
+        self.assertIn("class n_mcu planned", block)
+        self.assertIn("class n_modem,n_led device", block)
+        self.assertNotIn("shared", block)  # two devices on GPIO pins do not contend
+
     def test_layers_stacked_in_manifest_order(self):
         layering = self.text.split("## Layering")[1]
         self.assertIn("block-beta", layering)

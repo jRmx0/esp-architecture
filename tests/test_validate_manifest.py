@@ -109,6 +109,14 @@ class Rejects(unittest.TestCase):
     def test_holds_must_be_a_list(self):
         self.check(m(a=lambda d: d["hardware"]["devices"][0].update(holds="fonts")), "holds")
 
+    def test_device_on_several_buses(self):
+        def edit(d):
+            d["hardware"]["buses"].append({"id": "pins", "kind": "gpio", "description": "g"})
+            d["hardware"]["devices"][0]["bus"] = ["spi2", "pins"]
+        self.assertEqual(vm.validate(m(a=edit)), [])
+        self.check(m(a=lambda d: d["hardware"]["devices"][0].update(bus=["spi2", "i2c9"])), "bus i2c9 is not declared")
+        self.check(m(a=lambda d: d["hardware"]["devices"][0].update(bus=[])), "bus")
+
     def test_component_unknown_hardware(self):
         self.check(m(a=lambda d: d["components"][1].update(hardware=["lcd"])), "hardware lcd")
 

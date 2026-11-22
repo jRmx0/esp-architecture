@@ -24,7 +24,7 @@ flowchart LR
 
 ## Block
 
-Level 1, hardware: the processor, its buses on its edges and the devices outside on them.
+Level 1, hardware: the processor, its buses on its edges and the devices outside on them. Red buses: more than one device (spi_mem); they contend for the bus.
 
 ```mermaid
 block-beta
@@ -33,34 +33,46 @@ block-beta
     columns 1
     space
     n_sim7600["sim7600"]
-    n_ch9102["ch9102"]
+    n_user_led["user_led"]
+    n_autopilot_board["autopilot_board"]
   end
   block:chip:3
     columns 3
     chip_title["<b>ESP32</b>"]:3
-    n_uart_modem[/"uart_modem<br/>uart"/]
+    n_uart_modem[/"UART1"/]
     space
-    n_uart2_board[/"uart2_board<br/>uart"/]
-    n_uart0_console[/"uart0_console<br/>uart"/]
+    n_spi_mem[/"SPI0/1"/]
+    n_gpio_board[/"GPIO"/]
     space
-    n_gpio_board[/"gpio_board<br/>gpio"/]
+    space
+    n_uart2_board[/"UART2"/]
+    space
+    n_uart0_console[/"UART0"/]
   end
   block:right
     columns 1
     space
-    n_autopilot_board["autopilot_board"]
-    n_user_led["user_led"]
+    n_flash["flash<br/>2 OTA slots<br/>NVS<br/>core dump<br/>storage"]
+    n_psram["psram<br/>large heap buffers"]
+    n_ch9102["ch9102"]
   end
   style left fill:none,stroke:none
   style right fill:none,stroke:none
   n_uart_modem --- n_sim7600
+  n_gpio_board --- n_sim7600
+  n_gpio_board --- n_user_led
   n_uart2_board --- n_autopilot_board
   n_uart0_console --- n_ch9102
-  n_gpio_board --- n_user_led
+  n_spi_mem --- n_flash
+  n_spi_mem --- n_psram
   classDef title fill:none,stroke:none
-  classDef device fill:none,stroke:#888,stroke-dasharray:4 3
+  classDef device fill:none,stroke:#888
+  classDef planned fill:none,stroke:#888,stroke-dasharray:4 3
   class chip_title title
-  class n_sim7600,n_autopilot_board,n_ch9102,n_user_led device
+  class n_sim7600,n_user_led,n_ch9102,n_flash,n_psram device
+  class n_autopilot_board planned
+  classDef shared stroke:#d33,stroke-width:2px
+  class n_spi_mem shared
 ```
 
 ## Organigram

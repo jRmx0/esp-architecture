@@ -591,3 +591,126 @@ block-beta
   class sim7600,user_led,ch9102,autopilot_board box
   class devs group
 ```
+
+## Level 2, subsystems: v14 (boxes stretch vertically)
+
+The user's idea: a box beside a group grows to the group's height (Mermaid docs, "column width dynamics"), so boxes can stretch vertically too, and the hardware edge goes back to the right with the devices outside it.
+
+- platform is used by all four other subsystems: it stands on the left, as tall as the column of subsystems beside it, touching each.
+- The subsystems stack cellular, app, server_link, autopilot_link, so the connected pairs touch (cellular–app, app–server_link, server_link–autopilot_link) and the others don't.
+- cellular drives UART1 and GPIO: it is as tall as the two with a gap between them. server_link gets a gap under UART0, so UART0 and UART2 don't touch.
+- app drives no bus: a gap on its right.
+
+Invisible groups do the stretching (no fill, no border).
+
+v14a, padding 0:
+
+```mermaid
+%%{init: {"block": {"padding": 0}}}%%
+block-beta
+  columns 3
+  block:cpu
+    columns 2
+    title["<b>ESP32-WROVER-E</b>"]:2
+    platform["<b>platform</b>"]
+    block:subs
+      columns 1
+      block:row_c
+        columns 2
+        cellular["<b>cellular</b>"]
+        block:bus_c
+          columns 1
+          uart1["<b>UART1</b>"] space gpio["<b>GPIO</b>"]
+        end
+      end
+      block:row_a
+        columns 2
+        app["<b>app</b>"] space
+      end
+      block:row_s
+        columns 2
+        server_link["<b>server_link</b>"]
+        block:bus_s
+          columns 1
+          uart0["<b>UART0</b>"] space
+        end
+      end
+      block:row_l
+        columns 2
+        autopilot_link["<b>autopilot_link</b>"] uart2["<b>UART2</b>"]
+      end
+    end
+  end
+  space
+  block:devs
+    columns 1
+    sim7600["SIM7600 modem"] space user_led["user LED"] space ch9102["USB-UART bridge"] space autopilot_board["autopilot board"]
+  end
+  uart1 --- sim7600
+  gpio --- sim7600
+  gpio --- user_led
+  uart0 --- ch9102
+  uart2 --- autopilot_board
+  classDef title fill:none,stroke:none
+  classDef box fill:none,stroke:#888
+  classDef group fill:none,stroke:none
+  class title title
+  class sim7600,user_led,ch9102,autopilot_board box
+  class subs,row_c,bus_c,row_a,row_s,bus_s,row_l,devs group
+```
+
+v14b, default padding:
+
+```mermaid
+block-beta
+  columns 3
+  block:cpu
+    columns 2
+    title["<b>ESP32-WROVER-E</b>"]:2
+    platform["<b>platform</b>"]
+    block:subs
+      columns 1
+      block:row_c
+        columns 2
+        cellular["<b>cellular</b>"]
+        block:bus_c
+          columns 1
+          uart1["<b>UART1</b>"] space gpio["<b>GPIO</b>"]
+        end
+      end
+      block:row_a
+        columns 2
+        app["<b>app</b>"] space
+      end
+      block:row_s
+        columns 2
+        server_link["<b>server_link</b>"]
+        block:bus_s
+          columns 1
+          uart0["<b>UART0</b>"] space
+        end
+      end
+      block:row_l
+        columns 2
+        autopilot_link["<b>autopilot_link</b>"] uart2["<b>UART2</b>"]
+      end
+    end
+  end
+  space
+  block:devs
+    columns 1
+    sim7600["SIM7600 modem"] space user_led["user LED"] space ch9102["USB-UART bridge"] space autopilot_board["autopilot board"]
+  end
+  uart1 --- sim7600
+  gpio --- sim7600
+  gpio --- user_led
+  uart0 --- ch9102
+  uart2 --- autopilot_board
+  classDef title fill:none,stroke:none
+  classDef box fill:none,stroke:#888
+  classDef group fill:none,stroke:none
+  class title title
+  class sim7600,user_led,ch9102,autopilot_board box
+  class subs,row_c,bus_c,row_a,row_s,bus_s,row_l,devs group
+```
+

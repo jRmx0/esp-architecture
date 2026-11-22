@@ -1,5 +1,9 @@
 # yaml-language-server: $schema=../../plugin/schema/architecture.schema.json
 #
+# NOTE: an example, not a reviewed design. Transcribed from the as-built gateway with two fixes
+# (no cell -> usage; supervisor -> ntrip). It has not been reviewed as a target architecture and
+# will be replaced by the design made in the pilot (rmx-lt/rmx-mower-gateway#120).
+#
 # rmx-mower-gateway's target architecture, transcribed from its wiki page
 # Mower-Gateway-Architecture §3 (layers and target graph), §1.2 (tasks) and the
 # repo's CLAUDE.md (hardware), at commit 725a2ce. Not invented: where §3 is

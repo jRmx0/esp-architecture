@@ -1,3 +1,5 @@
+> **Example, not a reviewed design.** `architecture.yaml` is transcribed from the as-built rmx-mower-gateway (commit 725a2ce) with two fixes: no `cell -> usage` (an upward dependency) and `supervisor -> ntrip` (so the NTRIP client has a starter). It has not been reviewed as a target architecture and will be replaced by the design made in the pilot, [rmx-lt/rmx-mower-gateway#120](https://github.com/rmx-lt/rmx-mower-gateway/issues/120).
+
 <!-- esp-architecture:diagrams begin: generated from architecture.yaml by generate_diagrams.py, do not edit -->
 
 ## Context

@@ -62,14 +62,17 @@ def check(root, manifest):
     records, rec_errors = decision_records(arch / "decisions")
     errors += rec_errors
 
+    served = set()
     for dec, (name, text) in sorted(records.items()):
         missing = [s for s in SECTIONS if section(text, s) is None]
         if missing:
             errors.append(f"{name}: missing sections {', '.join(missing)}")
         cited = REQ.findall(section(text, "Requirements") or "")
+        served.update(cited)
         if not cited:
             errors.append(f"{name}: cites no requirement")
         errors += [f"{name}: {r} is not in requirements.md" for r in dict.fromkeys(cited) if r not in reqs]
+    errors += [f"requirements.md: {r} is served by no decision" for r in sorted(reqs - served)]
 
     for kind in ("subsystems", "layers", "components"):
         for item in manifest.get(kind, []):

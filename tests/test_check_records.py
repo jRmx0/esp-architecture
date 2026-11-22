@@ -31,7 +31,7 @@ def record(dec, reqs="REQ-001"):
 
 FILES = {
     "arch/requirements.md": REQS,
-    "arch/decisions/DEC-001-one-layer.md": record("DEC-001"),
+    "arch/decisions/DEC-001-one-layer.md": record("DEC-001", "REQ-001, REQ-002"),
     "arch/decisions/DEC-002-ui-component.md": record("DEC-002", "REQ-001, REQ-002"),
 }
 
@@ -102,6 +102,11 @@ class Records(unittest.TestCase):
             p.write("arch/decisions/DEC-002-ui-component.md",
                     record("DEC-002", "none").replace("Why.", "Why: REQ-001."))
             self.assertEqual(p.errors(), ["DEC-002-ui-component.md: cites no requirement"])
+
+    def test_requirement_served_by_no_decision(self):
+        with Project() as p:
+            p.write("arch/requirements.md", REQS + "\n## REQ-003 Log faults\nKeep the last ten.\n")
+            self.assertEqual(p.errors(), ["requirements.md: REQ-003 is served by no decision"])
 
     def test_missing_sections(self):
         with Project() as p:

@@ -126,6 +126,7 @@ Exit 0 when the records back the manifest, 1 with one error per line. It refuses
 - a subsystem, layer or component that cites no decision;
 - a cited `DEC-nnn` with no record, or a `REQ-nnn` not in `requirements.md`;
 - a record that misses a section, cites no requirement in its Requirements section, or cites one that does not exist;
+- a requirement that no record's Requirements section cites, so nothing in the design serves it;
 - a record whose file name is not `DEC-nnn-slug.md` or whose first heading does not match it, and an ID used twice.
 
 Records will also cite rule IDs once the rule catalog exists ([#4](https://github.com/jRmx0/esp-architecture/issues/4)). The gateway example has no records: it is not a reviewed design, and the pilot (rmx-lt/rmx-mower-gateway#120) writes the first real ones.

@@ -333,3 +333,32 @@ block-beta
   class sim7600,user_led,ch9102,autopilot_board box
   class devs group
 ```
+
+## Level 2, subsystems: v6
+
+v5 problems: the devices sat far above the processor, the SIM7600 and user LED boxes touched although they are not connected, and with Mermaid's default padding touching boxes still had a thin gap. v6: one grid of seven columns, so each device sits over its bus; a gap between every two devices; padding 0, so boxes that touch really touch.
+
+```mermaid
+%%{init: {"block": {"padding": 0}}}%%
+block-beta
+  columns 7
+  sim7600["SIM7600 modem"] space user_led["user LED"] space ch9102["USB-UART bridge"] space autopilot_board["autopilot board"]
+  space:7
+  block:cpu:7
+    columns 7
+    title["<b>ESP32-WROVER-E</b>"]:7
+    uart1["<b>UART1</b>"] space gpio["<b>GPIO</b>"] space uart0["<b>UART0</b>"] space uart2["<b>UART2</b>"]
+    cellular["<b>cellular</b>"]:3 app["<b>app</b>"] server_link["<b>server_link</b>"]:2 autopilot_link["<b>autopilot_link</b>"]
+    platform["<b>platform</b>"]:7
+  end
+  uart1 --- sim7600
+  gpio --- sim7600
+  gpio --- user_led
+  uart0 --- ch9102
+  uart2 --- autopilot_board
+  classDef title fill:none,stroke:none
+  classDef box fill:none,stroke:#888
+  class title title
+  class sim7600,user_led,ch9102,autopilot_board box
+```
+

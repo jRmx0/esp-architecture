@@ -4,6 +4,144 @@ Scratch branch for redrawing the block diagram step by step. Not for merging.
 
 Newest first: the latest version is at the top, the oldest at the bottom.
 
+## Level 2, subsystems: v23 (padding around)
+
+The user asked for a margin inside the processor box, as in the docs example. Mermaid has one padding setting: it is both the margin inside a box and the gap between boxes, so a margin also opens gaps between the boxes that touch. Each invisible group adds its own margin as well. v19 with only the padding changed:
+
+v23a, padding 8 (Mermaid's default):
+
+```mermaid
+%%{init: {"block": {"padding": 8}}}%%
+block-beta
+  columns 2
+  block:cpu
+    columns 2
+    platform["<b>platform</b>"]
+    block:subs
+      columns 1
+      block:row_c
+        columns 2
+        cellular["<b>cellular</b>"]
+        block:bus_c
+          columns 1
+          uart1["<b>UART1</b>"] space gpio["<b>GPIO</b>"]
+        end
+      end
+      block:row_a
+        columns 2
+        app["<b>app</b>"]
+        block:bus_a
+          columns 1
+          space space space
+        end
+      end
+      block:row_s
+        columns 2
+        server_link["<b>server_link</b>"]
+        block:bus_s
+          columns 1
+          uart0["<b>UART0</b>"] space space
+        end
+      end
+      block:row_l
+        columns 2
+        autopilot_link["<b>autopilot_link</b>"]
+        block:bus_l
+          columns 1
+          uart2["<b>UART2</b>"] space space
+        end
+      end
+    end
+  end
+  block:devs
+    columns 3
+    space space space
+    space sim7600["SIM7600 modem"] space
+    space space space
+    space user_led["user LED"] space
+    space space space
+    space ch9102["USB-UART bridge"] space
+    space space space
+    space autopilot_board["autopilot board"] space
+  end
+  uart1 --- sim7600
+  gpio --- sim7600
+  gpio --- user_led
+  uart0 --- ch9102
+  uart2 --- autopilot_board
+  classDef box fill:none,stroke:#888
+  classDef group fill:none,stroke:none
+  class sim7600,user_led,ch9102,autopilot_board box
+  class subs,row_c,bus_c,row_a,bus_a,row_s,bus_s,row_l,bus_l,devs group
+```
+
+v23b, padding 4:
+
+```mermaid
+%%{init: {"block": {"padding": 4}}}%%
+block-beta
+  columns 2
+  block:cpu
+    columns 2
+    platform["<b>platform</b>"]
+    block:subs
+      columns 1
+      block:row_c
+        columns 2
+        cellular["<b>cellular</b>"]
+        block:bus_c
+          columns 1
+          uart1["<b>UART1</b>"] space gpio["<b>GPIO</b>"]
+        end
+      end
+      block:row_a
+        columns 2
+        app["<b>app</b>"]
+        block:bus_a
+          columns 1
+          space space space
+        end
+      end
+      block:row_s
+        columns 2
+        server_link["<b>server_link</b>"]
+        block:bus_s
+          columns 1
+          uart0["<b>UART0</b>"] space space
+        end
+      end
+      block:row_l
+        columns 2
+        autopilot_link["<b>autopilot_link</b>"]
+        block:bus_l
+          columns 1
+          uart2["<b>UART2</b>"] space space
+        end
+      end
+    end
+  end
+  block:devs
+    columns 3
+    space space space
+    space sim7600["SIM7600 modem"] space
+    space space space
+    space user_led["user LED"] space
+    space space space
+    space ch9102["USB-UART bridge"] space
+    space space space
+    space autopilot_board["autopilot board"] space
+  end
+  uart1 --- sim7600
+  gpio --- sim7600
+  gpio --- user_led
+  uart0 --- ch9102
+  uart2 --- autopilot_board
+  classDef box fill:none,stroke:#888
+  classDef group fill:none,stroke:none
+  class sim7600,user_led,ch9102,autopilot_board box
+  class subs,row_c,bus_c,row_a,bus_a,row_s,bus_s,row_l,bus_l,devs group
+```
+
 ## Level 2, subsystems: v22 (label on the left)
 
 The user's idea: the label on the left and an empty block on the right. Two readings:

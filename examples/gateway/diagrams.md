@@ -155,7 +155,7 @@ block-beta
   columns 1
   block:r_l4_app
     columns 7
-    t_l4_app["l4_app<br/>Init order and the supervisor"]
+    t_l4_app["l4_app"]
     n_app_main["app_main"]
     n_supervisor["supervisor"]
     space
@@ -165,7 +165,7 @@ block-beta
   end
   block:r_l3_services
     columns 7
-    t_l3_services["l3_services<br/>MQTT, board link, NTRIP, commands, OTA, state, metrics"]
+    t_l3_services["l3_services"]
     n_mqtt_link["mqtt_link"]
     n_board_link["board_link"]
     n_ntrip["ntrip"]
@@ -182,7 +182,7 @@ block-beta
   end
   block:r_l2_codecs
     columns 7
-    t_l2_codecs["l2_codecs<br/>Pure C, no ESP-IDF or FreeRTOS includes, host-tested"]
+    t_l2_codecs["l2_codecs"]
     n_rmx_codec["rmx_codec"]
     space
     space
@@ -192,7 +192,7 @@ block-beta
   end
   block:r_l1_links
     columns 7
-    t_l1_links["l1_links<br/>Modem and PPP, board UART"]
+    t_l1_links["l1_links"]
     n_cell["cell"]
     n_bl_uart["bl_uart"]
     space
@@ -202,7 +202,7 @@ block-beta
   end
   block:r_l0_platform
     columns 7
-    t_l0_platform["l0_platform<br/>Pins, NVS, task table, link state"]
+    t_l0_platform["l0_platform"]
     n_board["board"]
     n_settings["settings"]
     n_gw_tasks["gw_tasks"]
@@ -213,5 +213,13 @@ block-beta
   classDef title fill:#eee,stroke:#999
   class t_l4_app,t_l3_services,t_l2_codecs,t_l1_links,t_l0_platform title
 ```
+
+| Layer | Holds |
+|---|---|
+| `l4_app` | Init order and the supervisor |
+| `l3_services` | MQTT, board link, NTRIP, commands, OTA, state, metrics |
+| `l2_codecs` | Pure C, no ESP-IDF or FreeRTOS includes, host-tested |
+| `l1_links` | Modem and PPP, board UART |
+| `l0_platform` | Pins, NVS, task table, link state |
 
 <!-- esp-architecture:diagrams end -->

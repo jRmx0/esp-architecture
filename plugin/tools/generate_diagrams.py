@@ -117,12 +117,14 @@ def layering(m):
         out += [f"  block:r_{layer['id']}", f"    columns {per_line + 1}"]
         lines = [members[i:i + per_line] for i in range(0, len(members), per_line)] or [[]]
         for n, chunk in enumerate(lines):
-            out.append(f"    t_{layer['id']}[{label(layer['id'], layer['description'])}]" if n == 0 else "    space")
+            # id only: every column is as wide as the widest cell, so a long title would widen the grid
+            out.append(f"    t_{layer['id']}[{label(layer['id'])}]" if n == 0 else "    space")
             out += [f"    {node(c)}[{label(c)}]" for c in chunk]
             out += ["    space"] * (per_line - len(chunk))
         out.append("  end")
     out += ["  classDef title fill:#eee,stroke:#999", f"  class {','.join('t_' + l['id'] for l, _ in rows)} title"]
-    return fence(out)
+    table = "\n".join(f"| `{l['id']}` | {l['description']} |" for l, _ in rows)
+    return fence(out) + "\n\n| Layer | Holds |\n|---|---|\n" + table
 
 
 def render(m, src, level=2):

@@ -93,7 +93,7 @@ Writes four Mermaid diagrams, which GitHub renders, into a marked section of `--
 | Context | `system`, `context` | The device as one box, the actors around it, what flows each way |
 | Block | `components`, `hardware`, `tasks` | The chip: components in a row per layer, the peripherals (buses) below them; devices outside, on their bus; which component drives which bus or device. A task table follows. |
 | Organigram | `depends_on` | Who calls whom from the top down. Red box: a component used by more than one other (a shared resource). Red arrow: an upward dependency. |
-| Layering | `layers`, `components` | A grid: one row per layer from the top, a title cell, then its components (Mermaid `block-beta`) |
+| Layering | `layers`, `components` | A grid: one row per layer from the top, a title cell, then its components, wrapping after 6 (Mermaid `block-beta`) |
 
 `--check` exits 1 when the section is missing or differs from what the manifest generates now. `--as-is` prints the include graph the code has now (from the checker), with includes the manifest does not allow in red; it is for discovery and is not checked.
 

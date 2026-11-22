@@ -59,6 +59,15 @@ class Render(unittest.TestCase):
         self.assertLess(layering.index("block:r_app"), layering.index("block:r_drivers"))
         self.assertIn("columns 2", layering)  # title cell + at most one component per layer
 
+    def test_long_layer_wraps(self):
+        m = copy.deepcopy(FULL)
+        m["components"] += [{"id": f"svc{i}", "layer": "app", "description": "s"} for i in range(7)]
+        row = gd.render(m, "x").split("block:r_app")[1].split("\n  end")[0]
+        self.assertIn("columns 7", row)  # title + 6 per line
+        cells = [l.strip() for l in row.splitlines()[2:]]
+        self.assertEqual(len(cells), 14)  # 2 lines of 7: title + ui + svc0..4, then space + svc5, svc6 + 4 space
+        self.assertEqual(cells[7], "space")
+
     def test_empty_layer_padded(self):
         m = copy.deepcopy(FULL)
         m["layers"].append({"id": "hal", "description": "nothing yet"})

@@ -22,6 +22,7 @@ BEGIN = "<!-- esp-architecture:diagrams begin: generated from {src} by generate_
 END = "<!-- esp-architecture:diagrams end -->"
 SECTION = re.compile(r"<!-- esp-architecture:diagrams begin.*?<!-- esp-architecture:diagrams end -->", re.S)
 RED = "stroke:#d33,stroke-width:2px"
+PER_LINE = 6  # components per line in the layering grid
 
 
 def node(i):
@@ -107,14 +108,18 @@ def organigram(m):
 def layering(m):
     # block-beta draws a grid: one row per layer, a title cell, then the layer's components.
     # flowchart subgraphs left uneven empty space between layers in GitHub's renderer.
+    # A layer with more than PER_LINE components wraps onto further lines, so the grid stays
+    # narrow enough for GitHub to draw it at a readable size.
     rows = [(l, [c["id"] for c in m["components"] if c["layer"] == l["id"]]) for l in m["layers"]]
-    width = 1 + max(len(members) for _, members in rows)
+    per_line = max(1, min(PER_LINE, max(len(members) for _, members in rows)))
     out = ["block-beta", "  columns 1"]
     for layer, members in rows:
-        out += [f"  block:r_{layer['id']}", f"    columns {width}",
-                f"    t_{layer['id']}[{label(layer['id'], layer['description'])}]"]
-        out += [f"    {node(c)}[{label(c)}]" for c in members]
-        out += ["    space"] * (width - 1 - len(members))
+        out += [f"  block:r_{layer['id']}", f"    columns {per_line + 1}"]
+        lines = [members[i:i + per_line] for i in range(0, len(members), per_line)] or [[]]
+        for n, chunk in enumerate(lines):
+            out.append(f"    t_{layer['id']}[{label(layer['id'], layer['description'])}]" if n == 0 else "    space")
+            out += [f"    {node(c)}[{label(c)}]" for c in chunk]
+            out += ["    space"] * (per_line - len(chunk))
         out.append("  end")
     out += ["  classDef title fill:#eee,stroke:#999", f"  class {','.join('t_' + l['id'] for l, _ in rows)} title"]
     return fence(out)

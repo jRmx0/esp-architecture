@@ -154,7 +154,7 @@ Layers from the top (application) to the bottom (platform).
 block-beta
   columns 1
   block:r_l4_app
-    columns 11
+    columns 7
     t_l4_app["l4_app<br/>Init order and the supervisor"]
     n_app_main["app_main"]
     n_supervisor["supervisor"]
@@ -162,13 +162,9 @@ block-beta
     space
     space
     space
-    space
-    space
-    space
-    space
   end
   block:r_l3_services
-    columns 11
+    columns 7
     t_l3_services["l3_services<br/>MQTT, board link, NTRIP, commands, OTA, state, metrics"]
     n_mqtt_link["mqtt_link"]
     n_board_link["board_link"]
@@ -176,13 +172,16 @@ block-beta
     n_remote_cmd["remote_cmd"]
     n_ota["ota"]
     n_gwstate["gwstate"]
+    space
     n_metrics["metrics"]
     n_monitor["monitor"]
     n_usage["usage"]
     n_devcert["devcert"]
+    space
+    space
   end
   block:r_l2_codecs
-    columns 11
+    columns 7
     t_l2_codecs["l2_codecs<br/>Pure C, no ESP-IDF or FreeRTOS includes, host-tested"]
     n_rmx_codec["rmx_codec"]
     space
@@ -190,13 +189,9 @@ block-beta
     space
     space
     space
-    space
-    space
-    space
-    space
   end
   block:r_l1_links
-    columns 11
+    columns 7
     t_l1_links["l1_links<br/>Modem and PPP, board UART"]
     n_cell["cell"]
     n_bl_uart["bl_uart"]
@@ -204,22 +199,14 @@ block-beta
     space
     space
     space
-    space
-    space
-    space
-    space
   end
   block:r_l0_platform
-    columns 11
+    columns 7
     t_l0_platform["l0_platform<br/>Pins, NVS, task table, link state"]
     n_board["board"]
     n_settings["settings"]
     n_gw_tasks["gw_tasks"]
     n_gw_link["gw_link"]
-    space
-    space
-    space
-    space
     space
     space
   end

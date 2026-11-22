@@ -98,7 +98,12 @@
       "additionalProperties": false,
       "properties": {
         "processor": {
-          "description": "The chip, e.g. ESP32; titles the processor box (default: the system name).",
+          "description": "The chip or module, e.g. ESP32-WROVER-E; titles the processor box (default: the system name).",
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "description": "What the processor or module has inside (e.g. integrated flash and PSRAM); shown in the text above the block diagram, not in it.",
           "type": "string",
           "minLength": 1
         },

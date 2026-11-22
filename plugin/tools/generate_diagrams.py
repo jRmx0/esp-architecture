@@ -159,6 +159,7 @@ def render(m, src, level=2):
             "against contention." if shared else "")
     note += f" Red arrows: {upward} upward, which the layers forbid." if upward else ""
     blk, shared_buses = block(m)
+    hw_text = m.get("hardware", {}).get("description")
     bnote = (f" Red lines: a bus with more than one device ({', '.join(shared_buses)}); a shared resource needs care "
              "against contention."
              if shared_buses else "")
@@ -166,7 +167,7 @@ def render(m, src, level=2):
         BEGIN.format(src=src), "",
         f"{h} Context", "", "The device and the world around it.", "", context(m), "",
         f"{h} Block", "", "Level 1, hardware: the processor and the devices outside it, one line per bus."
-        + bnote, "", blk, "",
+        + (f" {hw_text}" if hw_text else "") + bnote, "", blk, "",
         f"{h} Organigram", "", "Who calls whom, from the top down (`depends_on`)." + note, "", org + tasks(m), "",
         f"{h} Layering", "", "Layers from the top (application) to the bottom (platform).", "", layering(m), "",
         END,

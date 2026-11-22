@@ -85,6 +85,16 @@ class Render(unittest.TestCase):
         self.assertIn("linkStyle 0,1 stroke:#d33", block)
         self.assertIn("Red lines: a bus with more than one device (spi2)", text)
 
+    def test_block_hardware_description_in_text_not_in_diagram(self):
+        m = copy.deepcopy(FULL)
+        m["hardware"]["processor"] = "ESP32-WROVER-E"
+        m["hardware"]["description"] = "Integrated flash and PSRAM."
+        block = gd.render(m, "x").split("## Block")[1].split("## Organigram")[0]
+        note, diagram = block.split("```mermaid")
+        self.assertIn("one line per bus. Integrated flash and PSRAM.", note)
+        self.assertNotIn("Integrated", diagram)
+        self.assertIn('cpu_box["<b>ESP32-WROVER-E</b>"]', diagram)
+
     def test_block_multi_bus_device_and_peripheral(self):
         m = copy.deepcopy(FULL)
         m["hardware"] = {

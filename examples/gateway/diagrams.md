@@ -24,27 +24,22 @@ flowchart LR
 
 ## Block
 
-Level 1, hardware: the processor and the devices outside it, one line per bus. Red lines: a bus with more than one device (spi_mem); a shared resource needs care against contention.
+Level 1, hardware: the processor and the devices outside it, one line per bus. The ESP32-WROVER-E module has integrated 16 MB flash and 8 MB PSRAM.
 
 ```mermaid
 flowchart LR
-  cpu_box["<b>ESP32</b>"]
+  cpu_box["<b>ESP32-WROVER-E</b>"]
   n_sim7600["SIM7600 modem"]
   n_user_led["user LED"]
   n_autopilot_board["autopilot board"]
   n_ch9102["USB-UART bridge"]
-  n_flash["flash"]
-  n_psram["PSRAM"]
   n_sim7600 ---|"UART1"| cpu_box
   n_sim7600 ---|"GPIO"| cpu_box
-  n_user_led ---|"GPIO"| cpu_box
   n_ch9102 ---|"UART0"| cpu_box
-  cpu_box ---|"SPI0/1"| n_flash
-  cpu_box ---|"SPI0/1"| n_psram
+  cpu_box ---|"GPIO"| n_user_led
   cpu_box ---|"UART2"| n_autopilot_board
   classDef device fill:none,stroke:#888
-  class n_sim7600,n_user_led,n_autopilot_board,n_ch9102,n_flash,n_psram device
-  linkStyle 4,5 stroke:#d33,stroke-width:2px
+  class n_sim7600,n_user_led,n_autopilot_board,n_ch9102 device
 ```
 
 ## Organigram

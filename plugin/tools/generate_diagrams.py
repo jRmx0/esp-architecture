@@ -112,26 +112,21 @@ def block(m):
 
 def subsystems(m):
     """Level 2: the processor holds one box per subsystem and one per bus; devices sit outside on
-    their buses as in level 1b. Lines join a subsystem to the buses its components drive; arrows
-    join subsystems whose components depend on each other."""
+    their buses as in level 1b. Lines join a subsystem to the buses its components drive. No arrows
+    between subsystems: they relate by placement, and who calls whom is the organigram's job."""
     hw = m.get("hardware", {})
     buses, devices = hw.get("buses", []), hw.get("devices", [])
     dev_buses = {d["id"]: bus_ids(d) for d in devices}
-    of = {c["id"]: c["subsystem"] for c in m["components"]}
-    drives, calls = {}, {}  # dicts as ordered sets
+    drives = {}  # a dict as an ordered set
     for c in m["components"]:
         for h in c.get("hardware", []):
             for b in dev_buses.get(h, [h]):  # a device stands for the buses it is on
                 drives[(c["subsystem"], b)] = None
-        for d in c.get("depends_on", []):
-            if d in of and of[d] != c["subsystem"]:
-                calls[(c["subsystem"], of[d])] = None
     title = label("<b>" + hw.get("processor", m["system"]["name"]) + "</b>")
     out = ["flowchart LR", f"  subgraph cpu_box[{title}]"]
     out += [f"    {node(s['id'])}[{label('<b>' + s['id'] + '</b>')}]" for s in m["subsystems"]]
     out += [f"    {node(b['id'])}[{label(b.get('peripheral', b['kind'].upper()))}]" for b in buses]
     out += ["  end"] + [f"  {node(d['id'])}[{label(d.get('name', d['id']))}]" for d in devices]
-    out += [f"  {node(a)} --> {node(b)}" for a, b in calls]
     out += [f"  {node(s)} --- {node(b)}" for s, b in drives]
     out += [f"  {node(b)} --- {node(d['id'])}" for d in devices for b in bus_ids(d)]
     out += ["  classDef bus fill:none,stroke:#888,stroke-dasharray:3 3"] if buses else []
@@ -215,8 +210,7 @@ def render(m, src, level=2):
         + (f" {hw_text}" if hw_text else "") + bnote, "", hard, "",
         f"{h}# Level 1b: software", "", "The same hardware, each bus a box inside the processor: the drivers to write.",
         "", soft, "",
-        f"{h}# Level 2: subsystems", "", "The subsystems inside the processor: arrows where one calls another, "
-        "lines to the buses it drives.", "", subsystems(m), "",
+        f"{h}# Level 2: subsystems", "", "The subsystems inside the processor, each joined to the buses it drives.", "", subsystems(m), "",
         f"{h} Organigram", "", "Who calls whom, from the top down (`depends_on`)." + note, "", org + tasks(m), "",
         f"{h} Layering", "", "Layers from the top (application) to the bottom (platform).", "", layering(m), "",
         END,

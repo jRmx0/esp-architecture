@@ -162,10 +162,10 @@ class Render(unittest.TestCase):
         m["subsystems"].append({"id": "storage", "description": "keeps data"})
         m["components"][1].update(subsystem="storage", hardware=["nor"])  # a device stands for its bus
         m["components"].append({"id": "log", "subsystem": "core", "layer": "app", "description": "l",
-                                "depends_on": ["flash"]})  # second core -> storage call: one arrow
+                                "depends_on": ["flash"]})
         l2 = gd.render(m, "x").split("### Level 2: subsystems")[1].split("## Organigram")[0]
         self.assertIn('n_core["<b>core</b>"]', l2)
-        self.assertEqual(l2.count("n_core --> n_storage"), 1)
+        self.assertNotIn("-->", l2)  # no arrows between subsystems: the organigram shows calls
         self.assertIn("n_storage --- n_spi2", l2)
         self.assertIn("n_spi2 --- n_nor", l2)
         self.assertNotIn("n_ui", l2)  # components come in level 3

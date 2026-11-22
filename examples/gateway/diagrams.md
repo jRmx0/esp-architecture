@@ -71,7 +71,7 @@ flowchart LR
 
 ### Level 2: subsystems
 
-The subsystems inside the processor: arrows where one calls another, lines to the buses it drives.
+The subsystems inside the processor, each joined to the buses it drives.
 
 ```mermaid
 flowchart LR
@@ -90,13 +90,6 @@ flowchart LR
   n_user_led["user LED"]
   n_autopilot_board["autopilot board"]
   n_ch9102["USB-UART bridge"]
-  n_app --> n_platform
-  n_app --> n_server_link
-  n_app --> n_cellular
-  n_server_link --> n_platform
-  n_autopilot_link --> n_server_link
-  n_autopilot_link --> n_platform
-  n_cellular --> n_platform
   n_server_link --- n_uart0_console
   n_cellular --- n_uart_modem
   n_cellular --- n_gpio_board

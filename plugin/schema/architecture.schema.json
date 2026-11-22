@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jRmx0/esp-architecture/plugin/schema/architecture.schema.json",
+  "title": "ESP-IDF project architecture",
+  "description": "arch/architecture.yaml: the single source of truth for an ESP-IDF project's architecture. Cross-references (layer, depends_on, hardware, flows) are checked by validate_manifest.py, not by this schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "system", "layers", "components"],
+  "properties": {
+    "version": { "const": 1 },
+    "system": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "description"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    },
+    "context": {
+      "description": "Context diagram: the device and the world around it.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "actors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "kind", "description"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "kind": { "enum": ["person", "system", "device"] },
+              "description": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "flows": {
+          "description": "What moves between the system and an actor. `system` names the device itself.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["from", "to", "data"],
+            "properties": {
+              "from": { "$ref": "#/$defs/id" },
+              "to": { "$ref": "#/$defs/id" },
+              "data": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "hardware": {
+      "description": "Block diagram: communication peripherals inside the chip and the external devices on them.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "buses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "kind", "description"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "kind": { "enum": ["uart", "spi", "i2c", "i2s", "gpio", "adc", "pwm", "usb", "sdio", "can", "other"] },
+              "description": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "devices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "bus", "description"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "bus": { "$ref": "#/$defs/id" },
+              "description": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "layers": {
+      "description": "Layering diagram. Ordered from the top (application) to the bottom (platform).",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "description"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "description": { "type": "string", "minLength": 1 },
+          "decisions": { "$ref": "#/$defs/decisions" }
+        }
+      }
+    },
+    "allow_sideways": {
+      "description": "Whether a component may depend on another in the same layer. Dependencies downward are always allowed, upward never.",
+      "type": "boolean",
+      "default": true
+    },
+    "components": {
+      "description": "Block diagram boxes inside the chip; their depends_on edges form the organigram.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "layer", "description"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "layer": { "$ref": "#/$defs/id" },
+          "path": { "description": "Directory of the ESP-IDF component, relative to the project root.", "type": "string" },
+          "description": { "type": "string", "minLength": 1 },
+          "depends_on": { "description": "Other components of this manifest it may call.", "$ref": "#/$defs/ids" },
+          "idf_requires": { "description": "ESP-IDF or managed components it may use (as in REQUIRES / PRIV_REQUIRES).", "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+          "hardware": { "description": "Buses or devices it drives.", "$ref": "#/$defs/ids" },
+          "interfaces": { "description": "Public headers other components may include.", "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+          "requirements": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^REQ-[0-9]{3}$" } },
+          "decisions": { "$ref": "#/$defs/decisions" }
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "component"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "component": { "$ref": "#/$defs/id" },
+          "priority": { "type": "integer", "minimum": 0 },
+          "stack": { "type": "integer", "minimum": 512 },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "isrs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "component", "source"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "component": { "$ref": "#/$defs/id" },
+          "source": { "description": "Bus, device or peripheral that raises it.", "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "ids": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+    "decisions": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^DEC-[0-9]{3}$" } }
+  }
+}

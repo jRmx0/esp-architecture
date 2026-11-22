@@ -224,3 +224,40 @@ block-beta
   class app,server_link,autopilot_link,platform,cellular,uart0,uart2,uart1,gpio,ch9102,autopilot_board,sim7600,user_led box
   class devs group
 ```
+
+## Level 2, subsystems: v4
+
+v3 change, from the user: every box inside the processor (subsystems and buses) in Mermaid's default block style with a bold label, as the subsystems were in v2; devices outside stay plain outlines.
+
+```mermaid
+block-beta
+  columns 5
+  block:cpu:3
+    columns 3
+    title["<b>ESP32-WROVER-E</b>"]:3
+    app["<b>app</b>"] server_link["<b>server_link</b>"] uart0["<b>UART0</b>"]
+    space autopilot_link["<b>autopilot_link</b>"] uart2["<b>UART2</b>"]
+    platform["<b>platform</b>"] cellular["<b>cellular</b>"] uart1["<b>UART1</b>"]
+    space space gpio["<b>GPIO</b>"]
+  end
+  space
+  block:devs
+    columns 1
+    space
+    ch9102["USB-UART bridge"]
+    autopilot_board["autopilot board"]
+    sim7600["SIM7600 modem"]
+    user_led["user LED"]
+  end
+  uart0 --- ch9102
+  uart2 --- autopilot_board
+  uart1 --- sim7600
+  gpio --- sim7600
+  gpio --- user_led
+  classDef title fill:none,stroke:none
+  classDef box fill:none,stroke:#888
+  classDef group fill:none,stroke:none
+  class title title
+  class ch9102,autopilot_board,sim7600,user_led box
+  class devs group
+```

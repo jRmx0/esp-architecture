@@ -50,10 +50,23 @@ def context(m):
 
 
 def block(m):
+    # TB everywhere: unlinked nodes of one rank sit side by side, so each group reads as a row
     hw = m.get("hardware", {})
-    out = ["flowchart LR", f"  subgraph chip[{label(m['system']['name'])}]", "    direction TB"]
-    out += [f"    {node(b['id'])}[/{label(b['id'], b['kind'])}/]" for b in hw.get("buses", [])]
-    out += [f"    {node(c['id'])}[{label(c['id'])}]" for c in m["components"]]
+    out = ["flowchart TB", f"  subgraph chip[{label(m['system']['name'])}]"]
+    rows = []
+    for layer in m["layers"]:
+        members = [c for c in m["components"] if c["layer"] == layer["id"]]
+        if members:
+            rows.append(f"B_{layer['id']}")
+            out.append(f"    subgraph B_{layer['id']}[{label(layer['id'])}]")
+            out += [f"      {node(c['id'])}[{label(c['id'])}]" for c in members]
+            out.append("    end")
+    if hw.get("buses"):
+        rows.append("B_buses")
+        out.append(f"    subgraph B_buses[{label('peripherals')}]")
+        out += [f"      {node(b['id'])}[/{label(b['id'], b['kind'])}/]" for b in hw["buses"]]
+        out.append("    end")
+    out += [f"    {a} ~~~ {b}" for a, b in zip(rows, rows[1:])]
     out.append("  end")
     out += [f"  {node(d['id'])}{{{{{label(d['id'], d['description'])}}}}}" for d in hw.get("devices", [])]
     out += [f"  {node(d['bus'])} --- {node(d['id'])}" for d in hw.get("devices", [])]
@@ -95,7 +108,8 @@ def layering(m):
     out = ["flowchart TB"]
     for layer in m["layers"]:
         members = [c for c in m["components"] if c["layer"] == layer["id"]]
-        out += [f"  subgraph L_{layer['id']}[{label('<b>' + layer['id'] + '</b>: ' + layer['description'])}]", "    direction LR"]
+        # no direction override: in TB, unlinked nodes of one rank form a row
+        out.append(f"  subgraph L_{layer['id']}[{label('<b>' + layer['id'] + '</b>: ' + layer['description'])}]")
         out += [f"    {node(c['id'])}[{label(c['id'])}]" for c in members] or [f"    empty_{layer['id']}[ ]"]
         out.append("  end")
     ids = [f"L_{l['id']}" for l in m["layers"]]

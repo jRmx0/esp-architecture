@@ -25,32 +25,48 @@ flowchart LR
 Inside the chip: components and the buses they drive; outside: devices on those buses.
 
 ```mermaid
-flowchart LR
+flowchart TB
   subgraph chip["rmx-mower-gateway"]
-    direction TB
-    n_uart_modem[/"uart_modem<br/>uart"/]
-    n_uart2_board[/"uart2_board<br/>uart"/]
-    n_uart0_console[/"uart0_console<br/>uart"/]
-    n_gpio_board[/"gpio_board<br/>gpio"/]
-    n_app_main["app_main"]
-    n_supervisor["supervisor"]
-    n_mqtt_link["mqtt_link"]
-    n_board_link["board_link"]
-    n_ntrip["ntrip"]
-    n_remote_cmd["remote_cmd"]
-    n_ota["ota"]
-    n_gwstate["gwstate"]
-    n_metrics["metrics"]
-    n_monitor["monitor"]
-    n_usage["usage"]
-    n_devcert["devcert"]
-    n_rmx_codec["rmx_codec"]
-    n_cell["cell"]
-    n_bl_uart["bl_uart"]
-    n_board["board"]
-    n_settings["settings"]
-    n_gw_tasks["gw_tasks"]
-    n_gw_link["gw_link"]
+    subgraph B_l4_app["l4_app"]
+      n_app_main["app_main"]
+      n_supervisor["supervisor"]
+    end
+    subgraph B_l3_services["l3_services"]
+      n_mqtt_link["mqtt_link"]
+      n_board_link["board_link"]
+      n_ntrip["ntrip"]
+      n_remote_cmd["remote_cmd"]
+      n_ota["ota"]
+      n_gwstate["gwstate"]
+      n_metrics["metrics"]
+      n_monitor["monitor"]
+      n_usage["usage"]
+      n_devcert["devcert"]
+    end
+    subgraph B_l2_codecs["l2_codecs"]
+      n_rmx_codec["rmx_codec"]
+    end
+    subgraph B_l1_links["l1_links"]
+      n_cell["cell"]
+      n_bl_uart["bl_uart"]
+    end
+    subgraph B_l0_platform["l0_platform"]
+      n_board["board"]
+      n_settings["settings"]
+      n_gw_tasks["gw_tasks"]
+      n_gw_link["gw_link"]
+    end
+    subgraph B_buses["peripherals"]
+      n_uart_modem[/"uart_modem<br/>uart"/]
+      n_uart2_board[/"uart2_board<br/>uart"/]
+      n_uart0_console[/"uart0_console<br/>uart"/]
+      n_gpio_board[/"gpio_board<br/>gpio"/]
+    end
+    B_l4_app ~~~ B_l3_services
+    B_l3_services ~~~ B_l2_codecs
+    B_l2_codecs ~~~ B_l1_links
+    B_l1_links ~~~ B_l0_platform
+    B_l0_platform ~~~ B_buses
   end
   n_sim7600{{"sim7600<br/>SIM7600G-H LTE modem"}}
   n_uart_modem --- n_sim7600
@@ -137,12 +153,10 @@ Layers from the top (application) to the bottom (platform).
 ```mermaid
 flowchart TB
   subgraph L_l4_app["<b>l4_app</b>: Init order and the supervisor"]
-    direction LR
     n_app_main["app_main"]
     n_supervisor["supervisor"]
   end
   subgraph L_l3_services["<b>l3_services</b>: MQTT, board link, NTRIP, commands, OTA, state, metrics"]
-    direction LR
     n_mqtt_link["mqtt_link"]
     n_board_link["board_link"]
     n_ntrip["ntrip"]
@@ -155,16 +169,13 @@ flowchart TB
     n_devcert["devcert"]
   end
   subgraph L_l2_codecs["<b>l2_codecs</b>: Pure C, no ESP-IDF or FreeRTOS includes, host-tested"]
-    direction LR
     n_rmx_codec["rmx_codec"]
   end
   subgraph L_l1_links["<b>l1_links</b>: Modem and PPP, board UART"]
-    direction LR
     n_cell["cell"]
     n_bl_uart["bl_uart"]
   end
   subgraph L_l0_platform["<b>l0_platform</b>: Pins, NVS, task table, link state"]
-    direction LR
     n_board["board"]
     n_settings["settings"]
     n_gw_tasks["gw_tasks"]

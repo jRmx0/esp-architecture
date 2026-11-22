@@ -53,40 +53,42 @@ class Render(unittest.TestCase):
         self.assertIn('n_system[["<b>demo</b>"]]', ctx)
         self.assertIn("n_user --> n_cloud", ctx)
 
-    def test_block_puts_devices_outside_the_chip(self):
+    def test_block_level1_is_hardware_only(self):
         block = self.text.split("## Block")[1].split("## Organigram")[0]
         self.assertIn("block-beta", block)
-        inside = block.split("block:chip")[1].split("\n  end")[0]
-        self.assertIn("n_spi2[/", inside)
-        self.assertIn("n_ui[", inside)
-        self.assertNotIn("n_nor", inside)
-        self.assertIn("n_nor[", block.split("block:chip")[1].split("\n  end")[1])
+        chip = block.split("block:chip:3")[1].split("\n  end")[0]
+        self.assertIn('chip_title["<b>demo</b>"]:3', chip)  # no processor: the system name
+        self.assertIn("n_spi2[/", chip)
+        self.assertNotIn("n_ui", block)
+        self.assertNotIn("n_flash", block)
+        left = block.split("block:left")[1].split("\n  end")[0]
+        self.assertIn('n_nor["nor"]', left)
         self.assertIn("n_spi2 --- n_nor", block)
-        self.assertIn("n_flash --> n_spi2", block)
-        self.assertIn("| `ui_task` | ui | 3 | 4096 |", block)
+        self.assertNotIn("Red buses", self.text)
+        org = self.text.split("## Organigram")[1].split("## Layering")[0]
+        self.assertIn("| `ui_task` | ui | 3 | 4096 |", org)
 
-    def test_block_rows_follow_layers_then_buses(self):
-        inside = self.text.split("block:chip")[1].split("\n  end")[0]
-        self.assertLess(inside.index("n_ui["), inside.index("n_flash["))
-        self.assertLess(inside.index("n_flash["), inside.index("n_spi2[/"))
-
-    def test_bus_and_device_sit_under_their_driver(self):
+    def test_block_sides_processor_holds_and_shared_bus(self):
         m = copy.deepcopy(FULL)
-        m["components"][1]["hardware"] = []
-        m["components"] += [
-            {"id": "a", "layer": "drivers", "description": "a"},
-            {"id": "b", "layer": "drivers", "description": "b", "hardware": ["spi2"]},
-        ]
-        block = gd.render(m, "x").split("## Block")[1].split("```")[1]
-        cells = [l.strip() for l in block.splitlines()
-                 if l.startswith(("    n_", "    space", "  n_", "  space")) and "--" not in l]
-        width = 3  # drivers row: flash, a, b
-        # row 0: ui + 2 space; row 1: flash a b; bus row: spi2 under b (column 2); device row: nor under spi2
-        self.assertEqual(cells[6:9], ["space", "space", cells[8]])
-        self.assertTrue(cells[8].startswith("n_spi2[/"))
-        self.assertEqual(cells[9:12][:2], ["space", "space"])
-        self.assertTrue(cells[11].startswith("n_nor["))
-        self.assertEqual(len(cells), 4 * width)
+        m["hardware"] = {
+            "processor": "ESP32-S3",
+            "buses": [{"id": "spi2", "kind": "spi", "description": "s"},
+                      {"id": "i2c0", "kind": "i2c", "description": "i"}],
+            "devices": [{"id": "nor", "bus": "spi2", "description": "n", "holds": ["fonts", "images"]},
+                        {"id": "lcd", "bus": "spi2", "description": "l"},
+                        {"id": "imu", "bus": "i2c0", "description": "i"}]}
+        text = gd.render(m, "x")
+        block = text.split("## Block")[1].split("```")[1]
+        chip = block.split("block:chip:3")[1].split("\n  end")[0].splitlines()[3:]
+        self.assertEqual([l.strip().split("[")[0] for l in chip],
+                         ["n_spi2", "space", "n_i2c0", "space", "space", "space"])
+        left = block.split("block:left")[1].split("\n  end")[0]
+        self.assertIn('n_nor["nor<br/>fonts<br/>images"]', left)
+        self.assertLess(left.index("n_nor"), left.index("n_lcd"))
+        self.assertIn("n_imu[", block.split("block:right")[1])
+        self.assertIn('chip_title["<b>ESP32-S3</b>"]:3', block)
+        self.assertIn("class n_spi2 shared", block)
+        self.assertIn("Red buses: more than one device (spi2)", text)
 
     def test_layers_stacked_in_manifest_order(self):
         layering = self.text.split("## Layering")[1]

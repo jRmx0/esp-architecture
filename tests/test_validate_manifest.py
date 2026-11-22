@@ -100,6 +100,15 @@ class Rejects(unittest.TestCase):
     def test_device_unknown_bus(self):
         self.check(m(a=lambda d: d["hardware"]["devices"][0].update(bus="i2c0")), "bus i2c0 is not declared")
 
+    def test_processor_and_holds_accepted(self):
+        def edit(d):
+            d["hardware"]["processor"] = "ESP32-S3"
+            d["hardware"]["devices"][0]["holds"] = ["version", "image data"]
+        self.assertEqual(vm.validate(m(a=edit)), [])
+
+    def test_holds_must_be_a_list(self):
+        self.check(m(a=lambda d: d["hardware"]["devices"][0].update(holds="fonts")), "holds")
+
     def test_component_unknown_hardware(self):
         self.check(m(a=lambda d: d["components"][1].update(hardware=["lcd"])), "hardware lcd")
 

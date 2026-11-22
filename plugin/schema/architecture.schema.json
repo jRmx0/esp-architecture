@@ -97,6 +97,11 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "processor": {
+          "description": "The chip, e.g. ESP32; titles the processor box (default: the system name).",
+          "type": "string",
+          "minLength": 1
+        },
         "buses": {
           "type": "array",
           "items": {
@@ -153,6 +158,14 @@
               "description": {
                 "type": "string",
                 "minLength": 1
+              },
+              "holds": {
+                "description": "What the device stores, shown in its box (e.g. firmware version, image data).",
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
               }
             }
           }

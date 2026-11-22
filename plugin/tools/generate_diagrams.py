@@ -52,70 +52,45 @@ def context(m):
     return fence(out)
 
 
-def grid_rows(cells, width, indent="    "):
-    """Lay cells out left to right, width per line, padding the last line with space blocks."""
-    out = []
-    for i in range(0, len(cells), width):
-        chunk = cells[i:i + width]
-        out += [indent + c for c in chunk] + [indent + "space"] * (width - len(chunk))
-    return out
-
-
 def block(m):
-    # block-beta, not a flowchart: the author places every block, so the chip reads like the
-    # book's figure. One row per layer, the buses in the bottom row of the chip, devices outside.
+    """Level 1, hardware only: the processor with its buses on its left and right edges, each device
+    outside beside its bus. Components come in lower levels."""
+    # block-beta gives every grid column the same width, so the processor is one block spanning
+    # three outer columns and the device columns beside it stay narrow.
     hw = m.get("hardware", {})
     buses, devices = hw.get("buses", []), hw.get("devices", [])
-    rows = [[c["id"] for c in m["components"] if c["layer"] == l["id"]] for l in m["layers"]]
-    rows = [r for r in rows if r]
-    width = max(1, min(PER_LINE, max([len(r) for r in rows] + [len(buses)])))
+    on = {b["id"]: [d for d in devices if d["bus"] == b["id"]] for b in buses}
+    sides = (buses[0::2], buses[1::2])  # alternate so both edges fill evenly
+    # one row per device (at least one per bus), so a shared bus spans its devices' rows
+    rows = [[(b, d) for b in side for d in (on[b["id"]] or [None])] for side in sides]
+    height = max(len(r) for r in rows) if buses else 0
+    rows = [r + [(None, None)] * (height - len(r)) for r in rows]
+    title = hw.get("processor", m["system"]["name"])
 
-    out = ["block-beta", "  columns 1", "  block:chip", f"    columns {width}",
-           f"    chip_title[{label('<b>' + m['system']['name'] + '</b>')}]:{width}"]
-    column = {}  # component id -> its column in the grid
-    for r in rows:
-        out += grid_rows([f"{node(i)}[{label(i)}]" for i in r], width)
-        column.update({i: n % width for n, i in enumerate(r)})
+    def dev(d):
+        return f"    {node(d['id'])}[{label(d['id'], *d.get('holds', []))}]" if d else "    space"
 
-    def aligned(items, want):
-        """Place each item in its wanted column when free, else the next free one; wrap if full."""
-        lines = []
-        for item in items:
-            col = want(item)
-            for line in lines:
-                free = [c for c in range(width) if line[c] is None]
-                if free:
-                    line[next((c for c in free if c >= col), free[0])] = item
-                    break
-            else:
-                lines.append([None] * width)
-                lines[-1][col if col is not None else 0] = item
-        return lines
+    def bus(b, d):
+        first = b and (d is None or on[b["id"]][0] is d)
+        return f"    {node(b['id'])}[/{label(b['id'], b['kind'])}/]" if first else "    space"
 
-    # buses sit in the column of the component that drives them, so the link drops straight down
-    drivers = {h: c["id"] for c in reversed(m["components"]) for h in c.get("hardware", [])}
-    bus_lines = aligned([b["id"] for b in buses], lambda b: column.get(drivers.get(b), 0))
-    kinds = {b["id"]: b["kind"] for b in buses}
-    for line in bus_lines:
-        out += [f"    {node(b)}[/{label(b, kinds[b])}/]" if b else "    space" for b in line]
-    out.append("  end")
-    bus_col = {b: c for line in bus_lines for c, b in enumerate(line) if b}
-    # devices sit outside the chip, under their bus. They need a block of their own: a plain
-    # block next to the chip in the outer grid is drawn as tall as the chip.
-    if devices:
-        out += ["  block:outside", f"    columns {width}"]
-        for line in aligned([d["id"] for d in devices],
-                            lambda d: bus_col.get(next(x["bus"] for x in devices if x["id"] == d), 0)):
-            out += [f"    {node(d)}[{label(d, next(x['description'] for x in devices if x['id'] == d))}]"
-                    if d else "    space" for d in line]
-        out += ["  end", "  style outside fill:none,stroke:none"]
-    out += [f"  {node(c['id'])} --> {node(h)}" for c in m["components"] for h in c.get("hardware", [])]
+    out = ["block-beta", "  columns 5", "  block:left", "    columns 1", "    space"]
+    out += [dev(d) for _, d in rows[0]]
+    out += ["  end", "  block:chip:3", "    columns 3", f"    chip_title[{label('<b>' + title + '</b>')}]:3"]
+    for (lb, ld), (rb, rd) in zip(*rows):
+        out += [bus(lb, ld), "    space", bus(rb, rd)]
+    out += ["  end", "  block:right", "    columns 1", "    space"]
+    out += [dev(d) for _, d in rows[1]]
+    out += ["  end", "  style left fill:none,stroke:none", "  style right fill:none,stroke:none"]
     out += [f"  {node(d['bus'])} --- {node(d['id'])}" for d in devices]
     out += ["  classDef title fill:none,stroke:none", "  classDef device fill:none,stroke:#888,stroke-dasharray:4 3",
             "  class chip_title title"]
     if devices:
         out.append(f"  class {','.join(node(d['id']) for d in devices)} device")
-    return fence(out)
+    shared = [b for b, ds in on.items() if len(ds) > 1]
+    if shared:
+        out += [f"  classDef shared {RED}", f"  class {','.join(node(b) for b in shared)} shared"]
+    return fence(out), shared
 
 
 def tasks(m):
@@ -176,12 +151,15 @@ def render(m, src, level=2):
     note = (f" Red boxes: used by more than one component ({', '.join(shared)}); a shared resource needs care "
             "against contention." if shared else "")
     note += f" Red arrows: {upward} upward, which the layers forbid." if upward else ""
+    blk, shared_buses = block(m)
+    bnote = (f" Red buses: more than one device ({', '.join(shared_buses)}); they contend for the bus."
+             if shared_buses else "")
     return "\n".join([
         BEGIN.format(src=src), "",
         f"{h} Context", "", "The device and the world around it.", "", context(m), "",
-        f"{h} Block", "", "Inside the chip: components and the buses they drive; outside: devices on those buses.", "",
-        block(m) + tasks(m), "",
-        f"{h} Organigram", "", "Who calls whom, from the top down (`depends_on`)." + note, "", org, "",
+        f"{h} Block", "", "Level 1, hardware: the processor, its buses on its edges and the devices outside on them."
+        + bnote, "", blk, "",
+        f"{h} Organigram", "", "Who calls whom, from the top down (`depends_on`)." + note, "", org + tasks(m), "",
         f"{h} Layering", "", "Layers from the top (application) to the bottom (platform).", "", layering(m), "",
         END,
     ])

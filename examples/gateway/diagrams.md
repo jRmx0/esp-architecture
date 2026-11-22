@@ -24,88 +24,44 @@ flowchart LR
 
 ## Block
 
-Inside the chip: components and the buses they drive; outside: devices on those buses.
+Level 1, hardware: the processor, its buses on its edges and the devices outside on them.
 
 ```mermaid
 block-beta
-  columns 1
-  block:chip
-    columns 6
-    chip_title["<b>rmx-mower-gateway</b>"]:6
-    n_app_main["app_main"]
-    n_supervisor["supervisor"]
+  columns 5
+  block:left
+    columns 1
     space
-    space
-    space
-    space
-    n_mqtt_link["mqtt_link"]
-    n_board_link["board_link"]
-    n_ntrip["ntrip"]
-    n_remote_cmd["remote_cmd"]
-    n_ota["ota"]
-    n_gwstate["gwstate"]
-    n_metrics["metrics"]
-    n_monitor["monitor"]
-    n_usage["usage"]
-    n_devcert["devcert"]
-    space
-    space
-    n_rmx_codec["rmx_codec"]
-    space
-    space
-    space
-    space
-    space
-    n_cell["cell"]
-    n_bl_uart["bl_uart"]
-    space
-    space
-    space
-    space
-    n_board["board"]
-    n_settings["settings"]
-    n_gw_tasks["gw_tasks"]
-    n_gw_link["gw_link"]
-    space
-    space
+    n_sim7600["sim7600"]
+    n_ch9102["ch9102"]
+  end
+  block:chip:3
+    columns 3
+    chip_title["<b>ESP32</b>"]:3
     n_uart_modem[/"uart_modem<br/>uart"/]
+    space
     n_uart2_board[/"uart2_board<br/>uart"/]
-    n_gpio_board[/"gpio_board<br/>gpio"/]
     n_uart0_console[/"uart0_console<br/>uart"/]
     space
-    space
+    n_gpio_board[/"gpio_board<br/>gpio"/]
   end
-  block:outside
-    columns 6
-    n_sim7600["sim7600<br/>SIM7600G-H LTE modem"]
+  block:right
+    columns 1
     space
-    space
-    space
-    space
-    space
+    n_autopilot_board["autopilot_board"]
+    n_user_led["user_led"]
   end
-  style outside fill:none,stroke:none
-  n_devcert --> n_uart0_console
-  n_cell --> n_sim7600
-  n_bl_uart --> n_uart2_board
-  n_board --> n_gpio_board
+  style left fill:none,stroke:none
+  style right fill:none,stroke:none
   n_uart_modem --- n_sim7600
+  n_uart2_board --- n_autopilot_board
+  n_uart0_console --- n_ch9102
+  n_gpio_board --- n_user_led
   classDef title fill:none,stroke:none
   classDef device fill:none,stroke:#888,stroke-dasharray:4 3
   class chip_title title
-  class n_sim7600 device
+  class n_sim7600,n_autopilot_board,n_ch9102,n_user_led device
 ```
-
-| Task | Component | Priority | Stack |
-|---|---|---|---|
-| `ntrip` | ntrip | 6 | 4096 |
-| `cell_wd` | cell | 5 | 4096 |
-| `remote_cmd` | remote_cmd | 4 | 6144 |
-| `supervisor` | supervisor | 3 | 6144 |
-| `gw_tick` | metrics | 3 | 6144 |
-| `ota` | ota | 3 | 12288 |
-| `devcert` | devcert | 3 | 6144 |
-| `gw_signal` | metrics | 2 | 4096 |
 
 ## Organigram
 
@@ -165,6 +121,17 @@ flowchart TD
   class n_gw_link,n_mqtt_link,n_usage,n_rmx_codec,n_settings shared
   linkStyle 27 stroke:#d33,stroke-width:2px
 ```
+
+| Task | Component | Priority | Stack |
+|---|---|---|---|
+| `ntrip` | ntrip | 6 | 4096 |
+| `cell_wd` | cell | 5 | 4096 |
+| `remote_cmd` | remote_cmd | 4 | 6144 |
+| `supervisor` | supervisor | 3 | 6144 |
+| `gw_tick` | metrics | 3 | 6144 |
+| `ota` | ota | 3 | 12288 |
+| `devcert` | devcert | 3 | 6144 |
+| `gw_signal` | metrics | 2 | 4096 |
 
 ## Layering
 

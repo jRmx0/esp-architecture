@@ -29,6 +29,7 @@ context:
     - { from: operator, to: rmx_server, data: commands }
 
 hardware:
+  processor: ESP32
   buses:
     - { id: uart_modem, kind: uart, description: "Modem UART, TX 27 RX 26, no flow control" }
     - { id: uart2_board, kind: uart, description: UART2 with RTS/CTS to the autopilot }
@@ -36,6 +37,9 @@ hardware:
     - { id: gpio_board, kind: gpio, description: "PWRKEY 4, FLIGHT 25, DTR 32, status LED" }
   devices:
     - { id: sim7600, bus: uart_modem, description: SIM7600G-H LTE modem }
+    - { id: autopilot_board, bus: uart2_board, description: "Mower autopilot board (link planned, rmx-mower-gateway#62)" }
+    - { id: ch9102, bus: uart0_console, description: USB-UART bridge to the provisioning PC }
+    - { id: user_led, bus: gpio_board, description: Blue user LED on GPIO12 }
 
 layers:
   - { id: l4_app, description: Init order and the supervisor }

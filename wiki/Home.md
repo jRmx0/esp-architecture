@@ -22,11 +22,11 @@ One file per project describes the architecture. The checker and the diagram gen
 |---|---|---|
 | `system` | Name and purpose | Every diagram's title |
 | `context` | `actors` (person, system, device) and `flows` between two parties: `system` (the device) and an actor, or two actors; a flow's `data` is an optional short label | Context diagram |
-| `hardware` | `buses` inside the chip, `devices` on a bus | Block diagram |
+| `hardware` | `processor` (the chip, e.g. ESP32; optional), `buses` inside the chip, `devices` on a bus, each with an optional `holds` list (what it stores) | Block diagram |
 | `layers` | Ordered from the top (application) to the bottom (platform) | Layering diagram |
-| `components` | Layer, `path` (the ESP-IDF component directory), `sources` (globs of the files it owns; default all sources under `path`), `depends_on` (other components), `idf_requires` (ESP-IDF or managed components), `hardware`, `interfaces` (public headers), `requirements` (`REQ-nnn`), `decisions` (`DEC-nnn`) | Block diagram boxes; `depends_on` is the organigram |
+| `components` | Layer, `path` (the ESP-IDF component directory), `sources` (globs of the files it owns; default all sources under `path`), `depends_on` (other components), `idf_requires` (ESP-IDF or managed components), `hardware`, `interfaces` (public headers), `requirements` (`REQ-nnn`), `decisions` (`DEC-nnn`) | `depends_on` is the organigram |
 | `allow_sideways` | Whether a component may depend on one in its own layer (default true) | Validator |
-| `tasks`, `isrs` | Owner component, priority, stack, source | Block diagram notes, the checker |
+| `tasks`, `isrs` | Owner component, priority, stack, source | Task table under the organigram, the checker |
 
 Validate:
 
@@ -90,8 +90,8 @@ Writes four Mermaid diagrams, which GitHub renders, into a marked section of `--
 | Diagram | Drawn from | Shows |
 |---|---|---|
 | Context | `system`, `context` | How the device fits into the world: the device as one box, the actors around it and the flows between them, including flows between two actors. Boxes hold names only (descriptions stay in the manifest); an arrow carries its flow's short `data` label, or none. |
-| Block | `components`, `hardware`, `tasks` | A grid (Mermaid `block-beta`): the chip with its name, one row of components per layer (wrapping after 6) and the buses in the bottom row, each under the component that drives it; devices outside the chip, under their bus. Arrows: component to the bus or device it drives. A task table follows. |
-| Organigram | `depends_on` | Who calls whom from the top down. Red box: a component used by more than one other (a shared resource). Red arrow: an upward dependency. |
+| Block | `hardware` | Level 1, hardware only (Mermaid `block-beta`): the processor box titled with `hardware.processor` (or the system name), its buses on its left and right edges (alternating), each device outside beside its bus with its `holds` lines. A bus with more than one device is red: its devices contend for it. Software components come in lower levels (subsystems, then one view per subsystem), planned in issue #6. |
+| Organigram | `depends_on`, `tasks`, `isrs` | Who calls whom from the top down. Red box: a component used by more than one other (a shared resource). Red arrow: an upward dependency. A task table follows. |
 | Layering | `layers`, `components` | A grid (Mermaid `block-beta`): one row per layer from the top, the layer id, then its components, wrapping after 6. A table below gives each layer's description. |
 
 `--check` exits 1 when the section is missing or differs from what the manifest generates now. `--as-is` prints the include graph the code has now (from the checker), with includes the manifest does not allow in red; it is for discovery and is not checked.

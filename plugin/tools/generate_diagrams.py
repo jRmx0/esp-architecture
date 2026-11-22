@@ -1,4 +1,4 @@
-"""Generate Mermaid diagrams from arch/architecture.yaml: context, block, organigram, layering.
+"""Generate Mermaid diagrams from arch/architecture.yaml: context, block (levels 1 and 2), organigram, layering.
 
 usage: python generate_diagrams.py [--project DIR] [--manifest FILE] [--out FILE] [--level N] [--check | --as-is]
 
@@ -62,6 +62,11 @@ def bus_ids(device):
 SEPARATE_PINS = {"gpio", "adc", "pwm"}
 
 
+def shared_buses(buses, devices):
+    return [b["id"] for b in buses
+            if sum(b["id"] in bus_ids(d) for d in devices) > 1 and b["kind"] not in SEPARATE_PINS]
+
+
 def block(m):
     """Level 1: a hardware and a software block diagram. Hardware: one processor box and each
     device outside it, joined by one line per bus, labelled with the bus's peripheral. Software:
@@ -71,9 +76,8 @@ def block(m):
     # In LR, a device on an edge `device --- x` sits left, `x --- device` right.
     hw = m.get("hardware", {})
     buses, devices = hw.get("buses", []), hw.get("devices", [])
-    on = {b["id"]: [d for d in devices if b["id"] in bus_ids(d)] for b in buses}
     tag = {b["id"]: b.get("peripheral", b["kind"].upper()) for b in buses}
-    shared = [b["id"] for b in buses if len(on[b["id"]]) > 1 and b["kind"] not in SEPARATE_PINS]
+    shared = shared_buses(buses, devices)
     # Devices sharing their first bus stay on one side; groups go largest first to the side with
     # fewer lines, so the processor stays in the middle.
     groups = {}
@@ -104,6 +108,41 @@ def block(m):
     if shared:
         soft += [f"  classDef shared {AMBER}", f"  class {','.join(node(b) for b in shared)} shared"]
     return fence(hard + style + amber), fence(soft + style + amber), shared
+
+
+def subsystems(m):
+    """Level 2: the processor holds one box per subsystem and one per bus; devices sit outside on
+    their buses as in level 1b. Lines join a subsystem to the buses its components drive; arrows
+    join subsystems whose components depend on each other."""
+    hw = m.get("hardware", {})
+    buses, devices = hw.get("buses", []), hw.get("devices", [])
+    dev_buses = {d["id"]: bus_ids(d) for d in devices}
+    of = {c["id"]: c["subsystem"] for c in m["components"]}
+    drives, calls = {}, {}  # dicts as ordered sets
+    for c in m["components"]:
+        for h in c.get("hardware", []):
+            for b in dev_buses.get(h, [h]):  # a device stands for the buses it is on
+                drives[(c["subsystem"], b)] = None
+        for d in c.get("depends_on", []):
+            if d in of and of[d] != c["subsystem"]:
+                calls[(c["subsystem"], of[d])] = None
+    title = label("<b>" + hw.get("processor", m["system"]["name"]) + "</b>")
+    out = ["flowchart LR", f"  subgraph cpu_box[{title}]"]
+    out += [f"    {node(s['id'])}[{label('<b>' + s['id'] + '</b>')}]" for s in m["subsystems"]]
+    out += [f"    {node(b['id'])}[{label(b.get('peripheral', b['kind'].upper()))}]" for b in buses]
+    out += ["  end"] + [f"  {node(d['id'])}[{label(d.get('name', d['id']))}]" for d in devices]
+    out += [f"  {node(a)} --> {node(b)}" for a, b in calls]
+    out += [f"  {node(s)} --- {node(b)}" for s, b in drives]
+    out += [f"  {node(b)} --- {node(d['id'])}" for d in devices for b in bus_ids(d)]
+    out += ["  classDef bus fill:none,stroke:#888,stroke-dasharray:3 3"] if buses else []
+    out += [f"  class {','.join(node(b['id']) for b in buses)} bus"] if buses else []
+    out += ["  classDef device fill:none,stroke:#888",
+            f"  class {','.join(node(d['id']) for d in devices)} device"] if devices else []
+    shared = shared_buses(buses, devices)
+    out += [f"  classDef shared {AMBER}", f"  class {','.join(node(b) for b in shared)} shared"] if shared else []
+    table = "\n".join(f"| `{s['id']}` | {', '.join(c['id'] for c in m['components'] if c['subsystem'] == s['id'])} "
+                      f"| {s['description']} |" for s in m["subsystems"])
+    return fence(out) + "\n\n| Subsystem | Components | Does |\n|---|---|---|\n" + table
 
 
 def tasks(m):
@@ -176,6 +215,8 @@ def render(m, src, level=2):
         + (f" {hw_text}" if hw_text else "") + bnote, "", hard, "",
         f"{h}# Level 1b: software", "", "The same hardware, each bus a box inside the processor: the drivers to write.",
         "", soft, "",
+        f"{h}# Level 2: subsystems", "", "The subsystems inside the processor: arrows where one calls another, "
+        "lines to the buses it drives.", "", subsystems(m), "",
         f"{h} Organigram", "", "Who calls whom, from the top down (`depends_on`)." + note, "", org + tasks(m), "",
         f"{h} Layering", "", "Layers from the top (application) to the bottom (platform).", "", layering(m), "",
         END,

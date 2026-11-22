@@ -8,6 +8,7 @@
   "required": [
     "version",
     "system",
+    "subsystems",
     "layers",
     "components"
   ],
@@ -200,6 +201,28 @@
         }
       }
     },
+    "subsystems": {
+      "description": "Block level 2: the few bundles the components fall into, e.g. cellular, server link. Mandatory; a small project may have one.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
     "layers": {
       "description": "Layering diagram. Ordered from the top (application) to the bottom (platform).",
       "type": "array",
@@ -239,11 +262,16 @@
         "additionalProperties": false,
         "required": [
           "id",
+          "subsystem",
           "layer",
           "description"
         ],
         "properties": {
           "id": {
+            "$ref": "#/$defs/id"
+          },
+          "subsystem": {
+            "description": "The subsystem it belongs to.",
             "$ref": "#/$defs/id"
           },
           "layer": {

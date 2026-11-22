@@ -2,7 +2,7 @@
 
 Generated with `generate_diagrams.py --as-is` from the code at rmx-lt/rmx-mower-gateway `725a2ce` and `architecture.yaml` in this folder.
 
-Includes between components in the code now: 69 edges, 46 not in the manifest (red), 6 upward.
+Includes between components in the code now: 69 edges, 47 not in the manifest (red), 6 upward.
 
 ```mermaid
 flowchart TD
@@ -75,5 +75,5 @@ flowchart TD
   n_supervisor["supervisor"] --> n_ota["ota"]
   n_supervisor["supervisor"] --> n_rmx_codec["rmx_codec"]
   n_usage["usage"] --> n_metrics["metrics"]
-  linkStyle 0,1,2,3,4,5,6,7,8,9,10,14,15,16,18,20,21,23,24,25,26,27,29,30,31,32,33,34,35,38,41,42,43,44,47,48,49,53,54,55,56,58,60,63,67,68 stroke:#d33,stroke-width:2px
+  linkStyle 0,1,2,3,4,5,6,7,8,9,10,14,15,16,17,18,20,21,23,24,25,26,27,29,30,31,32,33,34,35,38,41,42,43,44,47,48,49,53,54,55,56,58,60,63,67,68 stroke:#d33,stroke-width:2px
 ```

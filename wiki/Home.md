@@ -22,9 +22,10 @@ One file per project describes the architecture. The checker and the diagram gen
 |---|---|---|
 | `system` | Name and purpose | Every diagram's title |
 | `context` | `actors` (person, system, device) and `flows` between two parties: `system` (the device) and an actor, or two actors; a flow's `data` is an optional short label | Context diagram |
-| `hardware` | `processor` (the chip or module, e.g. ESP32-WROVER-E; optional); `description` (what the processor or module has inside, e.g. integrated flash and PSRAM; optional, shown as text above the block diagram); `buses` inside the chip, each with an optional `peripheral` (e.g. UART2) that labels it; `devices`, each on one `bus` or a list of them (a modem on UART and GPIO), with an optional `name` shown in diagram boxes (the id when absent) and optional `holds` (what it stores, a software decision shown from level 2 or 3) | Block diagram |
+| `hardware` | `processor` (the chip or module, e.g. ESP32-WROVER-E; optional); `description` (what the processor or module has inside, e.g. integrated flash and PSRAM; optional, shown as text above the block diagram); `buses` inside the chip, each with an optional `peripheral` (e.g. UART2) that labels it; `devices`, each on one `bus` or a list of them (a modem on UART and GPIO), with an optional `name` shown in diagram boxes (the id when absent) and optional `holds` (what it stores, a software decision, to be shown at level 3) | Block diagram |
+| `subsystems` | Mandatory, at least one (a small project may have a single one): the few bundles the components fall into, each an `id` and `description` | Block level 2 |
 | `layers` | Ordered from the top (application) to the bottom (platform) | Layering diagram |
-| `components` | Layer, `path` (the ESP-IDF component directory), `sources` (globs of the files it owns; default all sources under `path`), `depends_on` (other components), `idf_requires` (ESP-IDF or managed components), `hardware`, `interfaces` (public headers), `requirements` (`REQ-nnn`), `decisions` (`DEC-nnn`) | `depends_on` is the organigram |
+| `components` | `subsystem` (mandatory, a declared subsystem), layer, `path` (the ESP-IDF component directory), `sources` (globs of the files it owns; default all sources under `path`), `depends_on` (other components), `idf_requires` (ESP-IDF or managed components), `hardware`, `interfaces` (public headers), `requirements` (`REQ-nnn`), `decisions` (`DEC-nnn`) | `depends_on` is the organigram |
 | `allow_sideways` | Whether a component may depend on one in its own layer (default true) | Validator |
 | `tasks`, `isrs` | Owner component, priority, stack, source | Task table under the organigram, the checker |
 
@@ -37,10 +38,11 @@ python plugin/tools/validate_manifest.py arch/architecture.yaml
 
 Exit 0 when valid, 1 with one error per line. Besides the schema it checks:
 
-- every id is unique across layers, components, actors, buses and devices; `system` is reserved
-- every reference exists: a component's layer, `depends_on`, `hardware`; each of a device's buses; a flow's actor; a task's or ISR's component
+- every id is unique across subsystems, layers, components, actors, buses and devices; `system` is reserved
+- every reference exists: a component's subsystem, layer, `depends_on`, `hardware`; each of a device's buses; a flow's actor; a task's or ISR's component
 - dependencies go down or sideways, never up; sideways only with `allow_sideways`
 - no dependency cycles
+- every subsystem has at least one component
 
 Tests: `python -m unittest discover -s tests`.
 
@@ -69,7 +71,7 @@ Why it reads `CMakeLists.txt` and not the build's `project_description.json`: th
 
 ### 5.1 First run on rmx-mower-gateway (2026-11-22)
 
-Code at `725a2ce`, manifest `examples/gateway/architecture.yaml` with `cell -> usage` removed (the validator rejects that upward edge). 78 violations:
+Code at `725a2ce`, manifest `examples/gateway/architecture.yaml`, which describes the target architecture: the code's upward `cell -> usage` is not in it. 78 violations:
 
 - 16 `shared`: every module except `rmx_codec` lives in `main`.
 - 47 `include` pairs, 6 upward: `cell` → `gwstate`, `metrics`, `usage`; `ota` → `supervisor`; `remote_cmd` → `supervisor`; `gw_tasks` → `rmx_codec`. Many of the others are edges the wiki's target graph leaves out on purpose (`gw_tasks`, `settings`) or never drew (`app_main` initialising every module).
@@ -85,14 +87,14 @@ python plugin/tools/generate_diagrams.py --project <project root> --check
 python plugin/tools/generate_diagrams.py --project <project root> --as-is
 ```
 
-Writes five Mermaid diagrams (block level 1 has two), which GitHub renders, into a marked section of `--out` (default `arch/diagrams.md`). Text outside the markers is kept, so the section can sit inside a wiki page; `--level` sets its heading level.
+Writes six Mermaid diagrams (block: levels 1a, 1b and 2), which GitHub renders, into a marked section of `--out` (default `arch/diagrams.md`). Text outside the markers is kept, so the section can sit inside a wiki page; `--level` sets its heading level.
 
 Colour key, the same in every diagram: **amber** = shared (a bus with several devices, a component with several callers): not an error, check contention. **Red** = breaks a rule (an upward dependency; in `--as-is`, an include the manifest does not declare).
 
 | Diagram | Drawn from | Shows |
 |---|---|---|
 | Context | `system`, `context` | How the device fits into the world: the device as one box, the actors around it and the flows between them, including flows between two actors. Boxes hold names only (descriptions stay in the manifest); an arrow carries its flow's short `data` label, or none. |
-| Block | `hardware` | Level 1, two Mermaid flowcharts. **1a, hardware:** one processor box titled with `hardware.processor` (or the system name), showing nothing else, and each device as its own box outside it, showing its `name` (or id), joined by one line per bus the device uses, labelled with the bus's `peripheral` (or the kind in capitals), so a modem on UART and GPIO gets two lines. **1b, software:** the same hardware, but each bus is a box inside the processor, labelled the same way, because it is driver code to write; each device is joined to the bus boxes it uses. Level 1 shows only devices outside the processor or module: memory inside the module (e.g. a WROVER's flash and PSRAM) is not a device, and `hardware.description` mentions it in the text above 1a instead. A device's `holds` are not shown: how a memory is used is a software decision, so level 2 or 3 will show it. Devices sharing their first bus stay on one side; groups go largest first to the side with fewer lines. **Sharing rule:** a bus with more than one device is amber in both diagrams (its lines, and in 1b its box), because the devices share its lines: check contention (one transfer at a time, locking, the slowest device sets the speed); buses of kind `gpio`, `adc` or `pwm` are exempt, because each device there uses its own pins or channels. Software components come in lower levels (subsystems, then one view per subsystem), planned in issue #6. Flowcharts rather than `block-beta`, because `block-beta` draws no line labels and pins boxes to a grid. |
+| Block | `hardware`, `subsystems` | Levels 1 and 2, three Mermaid flowcharts. **1a, hardware:** one processor box titled with `hardware.processor` (or the system name), showing nothing else, and each device as its own box outside it, showing its `name` (or id), joined by one line per bus the device uses, labelled with the bus's `peripheral` (or the kind in capitals), so a modem on UART and GPIO gets two lines. **1b, software:** the same hardware, but each bus is a box inside the processor, labelled the same way, because it is driver code to write; each device is joined to the bus boxes it uses. Level 1 shows only devices outside the processor or module: memory inside the module (e.g. a WROVER's flash and PSRAM) is not a device, and `hardware.description` mentions it in the text above 1a instead. A device's `holds` are not shown: how a memory is used is a software decision, so level 3 will show it. Devices sharing their first bus stay on one side; groups go largest first to the side with fewer lines. **Sharing rule:** a bus with more than one device is amber in both diagrams (its lines, and in 1b its box), because the devices share its lines: check contention (one transfer at a time, locking, the slowest device sets the speed); buses of kind `gpio`, `adc` or `pwm` are exempt, because each device there uses its own pins or channels. **Level 2, subsystems:** the processor holds one box per subsystem and the bus boxes of 1b (shared buses amber, as in 1b); devices sit outside on their buses. A line joins a subsystem to each bus its components drive (`hardware`; a device there stands for the buses it is on), and an arrow joins two subsystems when a component of one depends on a component of the other (one arrow per pair). A table lists each subsystem's components. Components themselves come at level 3 (one view per subsystem), planned in issue #6. Flowcharts rather than `block-beta`, because `block-beta` draws no line labels and pins boxes to a grid. |
 | Organigram | `depends_on`, `tasks`, `isrs` | Who calls whom from the top down. Amber box: a component used by more than one other (a shared resource; check contention). Red arrow: an upward dependency, which breaks the layering rule. A task table follows. |
 | Layering | `layers`, `components` | A grid (Mermaid `block-beta`): one row per layer from the top, the layer id, then its components, wrapping after 6. A table below gives each layer's description. |
 
@@ -100,4 +102,4 @@ Colour key, the same in every diagram: **amber** = shared (a bus with several de
 
 A manifest with schema errors is refused. Rule errors (an upward edge, a cycle) only warn, so a design under discussion can still be drawn; the checker is what blocks.
 
-Examples, rendered on GitHub: `examples/gateway/diagrams.md` (target) and `examples/gateway/as-is.md` (code at rmx-lt/rmx-mower-gateway `725a2ce`: 69 edges, 46 not in the manifest, 6 upward).
+Examples, rendered on GitHub: `examples/gateway/diagrams.md` (target) and `examples/gateway/as-is.md` (code at rmx-lt/rmx-mower-gateway `725a2ce`: 69 edges, 47 not in the manifest, 6 upward).

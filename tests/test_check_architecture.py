@@ -15,11 +15,12 @@ import check_architecture as ca  # noqa: E402
 MANIFEST = {
     "version": 1,
     "system": {"name": "demo", "description": "demo"},
+    "subsystems": [{"id": "core", "description": "everything"}],
     "layers": [{"id": "app", "description": "top"}, {"id": "drivers", "description": "bottom"}],
     "components": [
-        {"id": "ui", "layer": "app", "path": "main", "description": "UI",
+        {"id": "ui", "subsystem": "core", "layer": "app", "path": "main", "description": "UI",
          "depends_on": ["flash"], "idf_requires": ["esp_timer"]},
-        {"id": "flash", "layer": "drivers", "path": "components/flash", "description": "flash",
+        {"id": "flash", "subsystem": "core", "layer": "drivers", "path": "components/flash", "description": "flash",
          "idf_requires": ["esp_driver_spi"]},
     ],
 }
@@ -101,7 +102,7 @@ class Violations(unittest.TestCase):
     def test_shared_component_directory(self):
         m = with_components(
             dict(MANIFEST["components"][0], sources=["main/ui.c"]),
-            {"id": "log", "layer": "app", "path": "main", "sources": ["main/log.c"], "description": "log"},
+            {"id": "log", "subsystem": "core", "layer": "app", "path": "main", "sources": ["main/log.c"], "description": "log"},
             MANIFEST["components"][1])
         with Project(manifest=m) as p:
             p.write("main/log.c", "")
@@ -127,7 +128,7 @@ class Violations(unittest.TestCase):
             self.assertIn("missing flash", p.violations())
 
     def test_planned_component_without_path_is_skipped(self):
-        m = with_components(*MANIFEST["components"], {"id": "radio", "layer": "drivers", "description": "planned"})
+        m = with_components(*MANIFEST["components"], {"id": "radio", "subsystem": "core", "layer": "drivers", "description": "planned"})
         with Project(manifest=m) as p:
             self.assertEqual(p.violations(), {})
 

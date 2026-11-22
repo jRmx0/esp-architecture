@@ -69,9 +69,60 @@ flowchart LR
   class n_sim7600,n_user_led,n_autopilot_board,n_ch9102 device
 ```
 
+### Level 2: subsystems
+
+The subsystems inside the processor: arrows where one calls another, lines to the buses it drives.
+
+```mermaid
+flowchart LR
+  subgraph cpu_box["<b>ESP32-WROVER-E</b>"]
+    n_cellular["<b>cellular</b>"]
+    n_server_link["<b>server_link</b>"]
+    n_autopilot_link["<b>autopilot_link</b>"]
+    n_app["<b>app</b>"]
+    n_platform["<b>platform</b>"]
+    n_uart_modem["UART1"]
+    n_uart2_board["UART2"]
+    n_uart0_console["UART0"]
+    n_gpio_board["GPIO"]
+  end
+  n_sim7600["SIM7600 modem"]
+  n_user_led["user LED"]
+  n_autopilot_board["autopilot board"]
+  n_ch9102["USB-UART bridge"]
+  n_app --> n_platform
+  n_app --> n_server_link
+  n_app --> n_cellular
+  n_server_link --> n_platform
+  n_autopilot_link --> n_server_link
+  n_autopilot_link --> n_platform
+  n_cellular --> n_platform
+  n_server_link --- n_uart0_console
+  n_cellular --- n_uart_modem
+  n_cellular --- n_gpio_board
+  n_autopilot_link --- n_uart2_board
+  n_uart_modem --- n_sim7600
+  n_gpio_board --- n_sim7600
+  n_gpio_board --- n_user_led
+  n_uart2_board --- n_autopilot_board
+  n_uart0_console --- n_ch9102
+  classDef bus fill:none,stroke:#888,stroke-dasharray:3 3
+  class n_uart_modem,n_uart2_board,n_uart0_console,n_gpio_board bus
+  classDef device fill:none,stroke:#888
+  class n_sim7600,n_user_led,n_autopilot_board,n_ch9102 device
+```
+
+| Subsystem | Components | Does |
+|---|---|---|
+| `cellular` | cell, board | LTE modem, PPP and its pins |
+| `server_link` | mqtt_link, remote_cmd, ota, metrics, monitor, usage, devcert | MQTT to rmx-server: certificate, commands, OTA, telemetry, byte counts |
+| `autopilot_link` | board_link, ntrip, bl_uart | Board link to the autopilot and the NTRIP corrections it carries |
+| `app` | app_main, supervisor, gwstate | Init order, supervisor and gateway state |
+| `platform` | rmx_codec, settings, gw_tasks, gw_link | NVS, task table, link state and the pure-C codec |
+
 ## Organigram
 
-Who calls whom, from the top down (`depends_on`). Amber boxes: used by more than one component (gw_link, mqtt_link, usage, rmx_codec, settings); check contention (one caller at a time, locking, the slowest caller sets the pace). Red arrows: 1 upward, which the layers forbid.
+Who calls whom, from the top down (`depends_on`). Amber boxes: used by more than one component (gw_link, mqtt_link, rmx_codec, settings); check contention (one caller at a time, locking, the slowest caller sets the pace).
 
 ```mermaid
 flowchart TD
@@ -121,11 +172,9 @@ flowchart TD
   n_metrics --> n_mqtt_link
   n_devcert --> n_settings
   n_cell --> n_board
-  n_cell --> n_usage
   n_cell --> n_gw_link
   classDef shared stroke:#d98e04,stroke-width:2px
-  class n_gw_link,n_mqtt_link,n_usage,n_rmx_codec,n_settings shared
-  linkStyle 27 stroke:#d33,stroke-width:2px
+  class n_gw_link,n_mqtt_link,n_rmx_codec,n_settings shared
 ```
 
 | Task | Component | Priority | Stack |

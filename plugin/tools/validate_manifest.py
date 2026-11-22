@@ -30,6 +30,7 @@ def validate(manifest):
     ctx = manifest.get("context", {})
     hw = manifest.get("hardware", {})
     layers = [l["id"] for l in manifest["layers"]]
+    subsystems = [s["id"] for s in manifest["subsystems"]]
     comps = {c["id"]: c for c in manifest["components"]}
     actors = [a["id"] for a in ctx.get("actors", [])]
     buses = [b["id"] for b in hw.get("buses", [])]
@@ -37,7 +38,7 @@ def validate(manifest):
 
     # one namespace for everything a diagram draws as a box
     seen = {"system"}
-    for kind, ids in (("layer", layers), ("component", [c["id"] for c in manifest["components"]]),
+    for kind, ids in (("subsystem", subsystems), ("layer", layers), ("component", [c["id"] for c in manifest["components"]]),
                       ("actor", actors), ("bus", buses), ("device", devices)):
         for i in ids:
             if i in seen:
@@ -59,6 +60,11 @@ def validate(manifest):
         for t in manifest.get(kind, []):
             if t["component"] not in comps:
                 errors.append(f"{kind[:-1]} {t['id']}: component {t['component']} is not declared")
+
+    used = {c["subsystem"] for c in manifest["components"]}
+    errors += [f"component {c['id']}: subsystem {c['subsystem']} is not declared"
+               for c in manifest["components"] if c["subsystem"] not in subsystems]
+    errors += [f"subsystem {s}: no component belongs to it" for s in subsystems if s not in used]
 
     rank = {l: i for i, l in enumerate(layers)}  # 0 = top
     sideways = manifest.get("allow_sideways", True)

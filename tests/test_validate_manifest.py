@@ -24,10 +24,11 @@ MINIMAL = {
         "buses": [{"id": "spi2", "kind": "spi", "description": "SPI bus"}],
         "devices": [{"id": "flash", "bus": "spi2", "description": "external flash"}],
     },
+    "subsystems": [{"id": "core", "description": "everything"}],
     "layers": [{"id": "app", "description": "top"}, {"id": "drivers", "description": "bottom"}],
     "components": [
-        {"id": "ui", "layer": "app", "description": "UI", "depends_on": ["flash_drv"]},
-        {"id": "flash_drv", "layer": "drivers", "description": "flash driver", "hardware": ["flash"]},
+        {"id": "ui", "subsystem": "core", "layer": "app", "description": "UI", "depends_on": ["flash_drv"]},
+        {"id": "flash_drv", "subsystem": "core", "layer": "drivers", "description": "flash driver", "hardware": ["flash"]},
     ],
     "tasks": [{"id": "ui", "component": "ui", "priority": 3, "stack": 4096}],
 }
@@ -45,9 +46,8 @@ class Valid(unittest.TestCase):
     def test_minimal_is_valid(self):
         self.assertEqual(vm.validate(copy.deepcopy(MINIMAL)), [])
 
-    def test_gateway_reports_only_its_upward_dependency(self):
-        errors = vm.validate(yaml.safe_load(GATEWAY.read_text(encoding="utf-8")))
-        self.assertEqual(errors, ["component cell (l1_links) depends on usage (l3_services): upward"])
+    def test_gateway_target_architecture_is_valid(self):
+        self.assertEqual(vm.validate(yaml.safe_load(GATEWAY.read_text(encoding="utf-8"))), [])
 
 
 class Rejects(unittest.TestCase):
@@ -85,17 +85,32 @@ class Rejects(unittest.TestCase):
     def test_sideways_forbidden(self):
         def edit(d):
             d["allow_sideways"] = False
-            d["components"].append({"id": "logger", "layer": "app", "description": "log"})
+            d["components"].append({"id": "logger", "subsystem": "core", "layer": "app", "description": "log"})
             d["components"][0]["depends_on"].append("logger")
         self.check(m(a=edit), "same layer")
 
     def test_cycle(self):
         def edit(d):
             d["components"] += [
-                {"id": "a", "layer": "app", "description": "a", "depends_on": ["b"]},
-                {"id": "b", "layer": "app", "description": "b", "depends_on": ["a"]},
+                {"id": "a", "subsystem": "core", "layer": "app", "description": "a", "depends_on": ["b"]},
+                {"id": "b", "subsystem": "core", "layer": "app", "description": "b", "depends_on": ["a"]},
             ]
         self.check(m(a=edit), "dependency cycle: a -> b -> a")
+
+    def test_subsystems_required(self):
+        self.check(m(a=lambda d: d.pop("subsystems")), "'subsystems' is a required property")
+        self.check(m(a=lambda d: d.update(subsystems=[])), "should be non-empty")
+        self.check(m(a=lambda d: d["components"][0].pop("subsystem")), "'subsystem' is a required property")
+
+    def test_undeclared_subsystem(self):
+        self.check(m(a=lambda d: d["components"][0].update(subsystem="nope")), "subsystem nope is not declared")
+
+    def test_empty_subsystem(self):
+        self.check(m(a=lambda d: d["subsystems"].append({"id": "radio", "description": "r"})),
+                   "subsystem radio: no component belongs to it")
+
+    def test_subsystem_id_unique_across_kinds(self):
+        self.check(m(a=lambda d: d["subsystems"].append({"id": "ui", "description": "u"})), "component ui: id used twice")
 
     def test_device_unknown_bus(self):
         self.check(m(a=lambda d: d["hardware"]["devices"][0].update(bus="i2c0")), "bus i2c0 is not declared")

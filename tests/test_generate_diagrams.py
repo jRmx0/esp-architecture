@@ -40,7 +40,7 @@ class Render(unittest.TestCase):
     def test_four_diagrams_in_order(self):
         heads = [l for l in self.text.splitlines() if l.startswith("## ")]
         self.assertEqual(heads, ["## Context", "## Block", "## Organigram", "## Layering"])
-        self.assertEqual(self.text.count("```mermaid"), 5)  # block level 1 has two
+        self.assertEqual(self.text.count("```mermaid"), 6)  # block: levels 1a, 1b and 2
 
     def test_quotes_escaped_and_ids_prefixed(self):
         self.assertIn("says #quot;hi#quot;", self.text)
@@ -157,6 +157,24 @@ class Render(unittest.TestCase):
         self.assertIn('cpu_box["<b>demo</b>"]', block)
         self.assertNotIn("classDef", block)
 
+    def test_block_level2_subsystems(self):
+        m = copy.deepcopy(FULL)
+        m["subsystems"].append({"id": "storage", "description": "keeps data"})
+        m["components"][1].update(subsystem="storage", hardware=["nor"])  # a device stands for its bus
+        m["components"].append({"id": "log", "subsystem": "core", "layer": "app", "description": "l",
+                                "depends_on": ["flash"]})  # second core -> storage call: one arrow
+        l2 = gd.render(m, "x").split("### Level 2: subsystems")[1].split("## Organigram")[0]
+        self.assertIn('n_core["<b>core</b>"]', l2)
+        self.assertEqual(l2.count("n_core --> n_storage"), 1)
+        self.assertIn("n_storage --- n_spi2", l2)
+        self.assertIn("n_spi2 --- n_nor", l2)
+        self.assertNotIn("n_ui", l2)  # components come in level 3
+        self.assertIn("| `core` | ui, log | everything |", l2)
+        self.assertNotIn("classDef shared", l2)
+        m["hardware"]["devices"].append({"id": "lcd", "bus": "spi2", "description": "display"})
+        l2 = gd.render(m, "x").split("### Level 2: subsystems")[1].split("## Organigram")[0]
+        self.assertIn("class n_spi2 shared", l2)  # amber, as in 1b
+
     def test_layers_stacked_in_manifest_order(self):
         layering = self.text.split("## Layering")[1]
         self.assertIn("block-beta", layering)
@@ -165,7 +183,7 @@ class Render(unittest.TestCase):
 
     def test_long_layer_wraps(self):
         m = copy.deepcopy(FULL)
-        m["components"] += [{"id": f"svc{i}", "layer": "app", "description": "s"} for i in range(7)]
+        m["components"] += [{"id": f"svc{i}", "subsystem": "core", "layer": "app", "description": "s"} for i in range(7)]
         row = gd.render(m, "x").split("block:r_app")[1].split("\n  end")[0]
         self.assertIn("columns 7", row)  # title + 6 per line
         cells = [l.strip() for l in row.splitlines()[2:]]
@@ -184,7 +202,7 @@ class Render(unittest.TestCase):
 
     def test_shared_amber_and_upward_red(self):
         m = copy.deepcopy(FULL)
-        m["components"].append({"id": "log", "layer": "app", "description": "log", "depends_on": ["flash"]})
+        m["components"].append({"id": "log", "subsystem": "core", "layer": "app", "description": "log", "depends_on": ["flash"]})
         m["components"][1]["depends_on"] = ["ui"]  # upward: drivers -> app
         org = gd.render(m, "x").split("## Organigram")[1]
         self.assertIn("class n_flash shared", org)

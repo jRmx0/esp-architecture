@@ -5,7 +5,8 @@
 # repo's CLAUDE.md (hardware), at commit 725a2ce. Not invented: where §3 is
 # silent (e.g. dependencies of monitor, gw_tasks), the edge is left out.
 # `sources` map each module to its files in main/ at that commit.
-# The validator reports one real conflict in it: cell (L1) depends on usage (L3).
+# It is the target architecture, not the code now: the code's cell -> usage include (upward)
+# is left out and shows only in --as-is; how cell reports bytes to usage is an open decision.
 version: 1
 system:
   name: rmx-mower-gateway
@@ -44,6 +45,13 @@ hardware:
     - { id: autopilot_board, name: autopilot board, bus: uart2_board, description: "Mower autopilot board (link planned, rmx-mower-gateway#62)" }
     - { id: ch9102, name: USB-UART bridge, bus: uart0_console, description: USB-UART bridge to the provisioning PC }
 
+subsystems:
+  - { id: cellular, description: "LTE modem, PPP and its pins" }
+  - { id: server_link, description: "MQTT to rmx-server: certificate, commands, OTA, telemetry, byte counts" }
+  - { id: autopilot_link, description: "Board link to the autopilot and the NTRIP corrections it carries" }
+  - { id: app, description: "Init order, supervisor and gateway state" }
+  - { id: platform, description: "NVS, task table, link state and the pure-C codec" }
+
 layers:
   - { id: l4_app, description: Init order and the supervisor }
   - { id: l3_services, description: "MQTT, board link, NTRIP, commands, OTA, state, metrics" }
@@ -52,30 +60,31 @@ layers:
   - { id: l0_platform, description: "Pins, NVS, task table, link state" }
 
 components:
-  - { id: app_main, layer: l4_app, path: main, sources: [main/app_main.c], description: Init order only, depends_on: [supervisor] }
+  - { id: app_main, subsystem: app, layer: l4_app, path: main, sources: [main/app_main.c], description: Init order only, depends_on: [supervisor] }
   - id: supervisor
+    subsystem: app
     layer: l4_app
     path: main
     sources: [main/supervisor.*]
     description: Link state machine, recovery ladder, OTA confirm and report
     depends_on: [gw_link, mqtt_link, cell, ota, gwstate, metrics]
-  - { id: mqtt_link, layer: l3_services, path: main, sources: [main/mqtt_link.*], description: esp-mqtt client and route table, depends_on: [devcert, usage, gw_link] }
-  - { id: board_link, layer: l3_services, description: "Board link to the autopilot (planned, rmx-mower-gateway#62)", depends_on: [bl_uart, mqtt_link, rmx_codec, gw_link] }
-  - { id: ntrip, layer: l3_services, path: main, sources: [main/ntrip.*], description: NTRIP client, depends_on: [board_link, settings, gw_link, rmx_codec] }
-  - { id: remote_cmd, layer: l3_services, path: main, sources: [main/remote_cmd.*], description: "Command queue, registry and acks", depends_on: [mqtt_link, rmx_codec] }
-  - { id: ota, layer: l3_services, path: main, sources: [main/ota.*], description: Firmware download over MQTT, depends_on: [mqtt_link, remote_cmd, rmx_codec] }
-  - { id: gwstate, layer: l3_services, path: main, sources: [main/gwstate.*], description: "Boot counter, clock, gateway/state fields", depends_on: [settings] }
-  - { id: metrics, layer: l3_services, path: main, sources: [main/metrics.*], description: Metric catalogue and telemetry, depends_on: [mqtt_link] }
-  - { id: monitor, layer: l3_services, path: main, sources: [main/monitor.*], description: Monitor sessions }
-  - { id: usage, layer: l3_services, path: main, sources: [main/usage.*], description: Byte counters per link and topic }
-  - { id: devcert, layer: l3_services, path: main, sources: [main/devcert.*, main/creds.*], description: "Device key, CSR, provisioning console", depends_on: [settings], hardware: [uart0_console] }
-  - { id: rmx_codec, layer: l2_codecs, path: components/rmx_codec, description: "COBS, CRC-16, frames, firmware chunks, commands, NTRIP codec, recovery" }
-  - { id: cell, layer: l1_links, path: main, sources: [main/cell.*], description: "esp_modem DCE, PPP, AT sessions, redial", depends_on: [board, usage, gw_link], hardware: [sim7600] }
-  - { id: bl_uart, layer: l1_links, description: Board link UART driver (planned), hardware: [uart2_board] }
-  - { id: board, layer: l0_platform, path: main, sources: [main/board.*], description: "Pins, PWRKEY pulse, status LED", hardware: [gpio_board] }
-  - { id: settings, layer: l0_platform, path: main, sources: [main/settings.*], description: The only NVS opener }
-  - { id: gw_tasks, layer: l0_platform, path: main, sources: [main/gw_tasks.*], description: Task table and liveness counters }
-  - { id: gw_link, layer: l0_platform, path: main, sources: [main/gw_link.*], description: Link-state bits and GW_EVENT edges }
+  - { id: mqtt_link, subsystem: server_link, layer: l3_services, path: main, sources: [main/mqtt_link.*], description: esp-mqtt client and route table, depends_on: [devcert, usage, gw_link] }
+  - { id: board_link, subsystem: autopilot_link, layer: l3_services, description: "Board link to the autopilot (planned, rmx-mower-gateway#62)", depends_on: [bl_uart, mqtt_link, rmx_codec, gw_link] }
+  - { id: ntrip, subsystem: autopilot_link, layer: l3_services, path: main, sources: [main/ntrip.*], description: NTRIP client, depends_on: [board_link, settings, gw_link, rmx_codec] }
+  - { id: remote_cmd, subsystem: server_link, layer: l3_services, path: main, sources: [main/remote_cmd.*], description: "Command queue, registry and acks", depends_on: [mqtt_link, rmx_codec] }
+  - { id: ota, subsystem: server_link, layer: l3_services, path: main, sources: [main/ota.*], description: Firmware download over MQTT, depends_on: [mqtt_link, remote_cmd, rmx_codec] }
+  - { id: gwstate, subsystem: app, layer: l3_services, path: main, sources: [main/gwstate.*], description: "Boot counter, clock, gateway/state fields", depends_on: [settings] }
+  - { id: metrics, subsystem: server_link, layer: l3_services, path: main, sources: [main/metrics.*], description: Metric catalogue and telemetry, depends_on: [mqtt_link] }
+  - { id: monitor, subsystem: server_link, layer: l3_services, path: main, sources: [main/monitor.*], description: Monitor sessions }
+  - { id: usage, subsystem: server_link, layer: l3_services, path: main, sources: [main/usage.*], description: Byte counters per link and topic }
+  - { id: devcert, subsystem: server_link, layer: l3_services, path: main, sources: [main/devcert.*, main/creds.*], description: "Device key, CSR, provisioning console", depends_on: [settings], hardware: [uart0_console] }
+  - { id: rmx_codec, subsystem: platform, layer: l2_codecs, path: components/rmx_codec, description: "COBS, CRC-16, frames, firmware chunks, commands, NTRIP codec, recovery" }
+  - { id: cell, subsystem: cellular, layer: l1_links, path: main, sources: [main/cell.*], description: "esp_modem DCE, PPP, AT sessions, redial", depends_on: [board, gw_link], hardware: [sim7600] }
+  - { id: bl_uart, subsystem: autopilot_link, layer: l1_links, description: Board link UART driver (planned), hardware: [uart2_board] }
+  - { id: board, subsystem: cellular, layer: l0_platform, path: main, sources: [main/board.*], description: "Pins, PWRKEY pulse, status LED", hardware: [gpio_board] }
+  - { id: settings, subsystem: platform, layer: l0_platform, path: main, sources: [main/settings.*], description: The only NVS opener }
+  - { id: gw_tasks, subsystem: platform, layer: l0_platform, path: main, sources: [main/gw_tasks.*], description: Task table and liveness counters }
+  - { id: gw_link, subsystem: platform, layer: l0_platform, path: main, sources: [main/gw_link.*], description: Link-state bits and GW_EVENT edges }
 
 tasks:
   - { id: ntrip, component: ntrip, priority: 6, stack: 4096 }

@@ -17,14 +17,16 @@ context:
     - { id: ntrip_caster, kind: system, description: NTRIP caster for RTK corrections }
     - { id: autopilot, kind: device, description: Mower autopilot board on the board link }
     - { id: installer, kind: person, description: Provisions the device certificate over the serial console }
+    - { id: operator, kind: person, description: Sends commands from a browser through the server's HTTP API (app.rmx.lt) }
   flows:
-    - { from: system, to: rmx_server, data: "state, telemetry, metrics, command acks" }
-    - { from: rmx_server, to: system, data: "commands, firmware chunks" }
-    - { from: system, to: ntrip_caster, data: GGA position }
-    - { from: ntrip_caster, to: system, data: RTCM corrections }
-    - { from: autopilot, to: system, data: "frames to relay, GGA" }
-    - { from: system, to: autopilot, data: "corrections, relayed messages, heartbeat" }
-    - { from: installer, to: system, data: device certificate chain }
+    - { from: system, to: rmx_server, data: "state, telemetry" }
+    - { from: rmx_server, to: system, data: "commands, firmware" }
+    - { from: system, to: ntrip_caster, data: GGA }
+    - { from: ntrip_caster, to: system, data: RTCM }
+    - { from: autopilot, to: system, data: "frames, GGA" }
+    - { from: system, to: autopilot, data: "corrections, frames" }
+    - { from: installer, to: system, data: certificate }
+    - { from: operator, to: rmx_server, data: commands }
 
 hardware:
   buses:

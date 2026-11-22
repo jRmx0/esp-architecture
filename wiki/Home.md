@@ -21,7 +21,7 @@ One file per project describes the architecture. The checker and the diagram gen
 | Section | Holds | Feeds |
 |---|---|---|
 | `system` | Name and purpose | Every diagram's title |
-| `context` | `actors` (person, system, device) and `flows` between `system` and an actor | Context diagram |
+| `context` | `actors` (person, system, device) and `flows` between two parties: `system` (the device) and an actor, or two actors; a flow's `data` is an optional short label | Context diagram |
 | `hardware` | `buses` inside the chip, `devices` on a bus | Block diagram |
 | `layers` | Ordered from the top (application) to the bottom (platform) | Layering diagram |
 | `components` | Layer, `path` (the ESP-IDF component directory), `sources` (globs of the files it owns; default all sources under `path`), `depends_on` (other components), `idf_requires` (ESP-IDF or managed components), `hardware`, `interfaces` (public headers), `requirements` (`REQ-nnn`), `decisions` (`DEC-nnn`) | Block diagram boxes; `depends_on` is the organigram |
@@ -39,7 +39,6 @@ Exit 0 when valid, 1 with one error per line. Besides the schema it checks:
 
 - every id is unique across layers, components, actors, buses and devices; `system` is reserved
 - every reference exists: a component's layer, `depends_on`, `hardware`; a device's bus; a flow's actor; a task's or ISR's component
-- every flow has `system` at one end
 - dependencies go down or sideways, never up; sideways only with `allow_sideways`
 - no dependency cycles
 
@@ -90,7 +89,7 @@ Writes four Mermaid diagrams, which GitHub renders, into a marked section of `--
 
 | Diagram | Drawn from | Shows |
 |---|---|---|
-| Context | `system`, `context` | The device as one box, the actors around it, what flows each way |
+| Context | `system`, `context` | How the device fits into the world: the device as one box, the actors around it and the flows between them, including flows between two actors. Boxes hold names only (descriptions stay in the manifest); an arrow carries its flow's short `data` label, or none. |
 | Block | `components`, `hardware`, `tasks` | A grid (Mermaid `block-beta`): the chip with its name, one row of components per layer (wrapping after 6) and the buses in the bottom row, each under the component that drives it; devices outside the chip, under their bus. Arrows: component to the bus or device it drives. A task table follows. |
 | Organigram | `depends_on` | Who calls whom from the top down. Red box: a component used by more than one other (a shared resource). Red arrow: an upward dependency. |
 | Layering | `layers`, `components` | A grid (Mermaid `block-beta`): one row per layer from the top, the layer id, then its components, wrapping after 6. A table below gives each layer's description. |

@@ -67,15 +67,14 @@
           }
         },
         "flows": {
-          "description": "What moves between the system and an actor. `system` names the device itself.",
+          "description": "What moves between two parties: the system (`system`) and an actor, or two actors. `data` is an optional short arrow label.",
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
             "required": [
               "from",
-              "to",
-              "data"
+              "to"
             ],
             "properties": {
               "from": {

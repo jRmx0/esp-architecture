@@ -6,18 +6,20 @@ The device and the world around it.
 
 ```mermaid
 flowchart LR
-  n_system[["<b>rmx-mower-gateway</b><br/>ESP32 + SIM7600G-H board that links the mower's autopilot to rmx-server over LTE (MQTT over TLS) and relays NTRIP corrections."]]
-  n_rmx_server["<b>rmx_server</b><br/>Broker and server app at mqtt.rmx.lt:8883"]
-  n_ntrip_caster["<b>ntrip_caster</b><br/>NTRIP caster for RTK corrections"]
-  n_autopilot{{"<b>autopilot</b><br/>Mower autopilot board on the board link"}}
-  n_installer(["<b>installer</b><br/>Provisions the device certificate over the serial console"])
-  n_system -->|"state, telemetry, metrics, command acks"| n_rmx_server
-  n_rmx_server -->|"commands, firmware chunks"| n_system
-  n_system -->|"GGA position"| n_ntrip_caster
-  n_ntrip_caster -->|"RTCM corrections"| n_system
-  n_autopilot -->|"frames to relay, GGA"| n_system
-  n_system -->|"corrections, relayed messages, heartbeat"| n_autopilot
-  n_installer -->|"device certificate chain"| n_system
+  n_system[["<b>rmx-mower-gateway</b>"]]
+  n_rmx_server["rmx_server"]
+  n_ntrip_caster["ntrip_caster"]
+  n_autopilot{{"autopilot"}}
+  n_installer(["installer"])
+  n_operator(["operator"])
+  n_system -->|"state, telemetry"| n_rmx_server
+  n_rmx_server -->|"commands, firmware"| n_system
+  n_system -->|"GGA"| n_ntrip_caster
+  n_ntrip_caster -->|"RTCM"| n_system
+  n_autopilot -->|"frames, GGA"| n_system
+  n_system -->|"corrections, frames"| n_autopilot
+  n_installer -->|"certificate"| n_system
+  n_operator -->|"commands"| n_rmx_server
 ```
 
 ## Block

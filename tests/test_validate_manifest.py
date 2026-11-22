@@ -103,11 +103,11 @@ class Rejects(unittest.TestCase):
     def test_component_unknown_hardware(self):
         self.check(m(a=lambda d: d["components"][1].update(hardware=["lcd"])), "hardware lcd")
 
-    def test_flow_without_system(self):
+    def test_flow_between_actors_without_data(self):
         def edit(d):
             d["context"]["actors"].append({"id": "cloud", "kind": "system", "description": "c"})
-            d["context"]["flows"].append({"from": "user", "to": "cloud", "data": "x"})
-        self.check(m(a=edit), "one end must be 'system'")
+            d["context"]["flows"].append({"from": "user", "to": "cloud"})
+        self.assertEqual(vm.validate(m(a=edit)), [])
 
     def test_flow_unknown_actor(self):
         self.check(m(a=lambda d: d["context"]["flows"][0].update({"from": "ghost"})), "ghost is not an actor")

@@ -51,8 +51,6 @@ def validate(manifest):
             errors.append(f"device {d['id']}: bus {d['bus']} is not declared")
     for f in ctx.get("flows", []):
         ends = {f["from"], f["to"]}
-        if "system" not in ends:
-            errors.append(f"flow {f['from']} -> {f['to']}: one end must be 'system'")
         for e in ends - {"system"}:
             if e not in actors:
                 errors.append(f"flow {f['from']} -> {f['to']}: {e} is not an actor")

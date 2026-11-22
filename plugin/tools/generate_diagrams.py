@@ -41,12 +41,14 @@ def fence(lines):
 def context(m):
     ctx = m.get("context", {})
     shape = {"person": ("([", "])"), "system": ("[", "]"), "device": ("{{", "}}")}
-    out = ["flowchart LR", f"  {node('system')}[[{label('<b>' + m['system']['name'] + '</b>', m['system']['description'])}]]"]
+    # names only: the context diagram is about relationships, not what is inside any box
+    out = ["flowchart LR", f"  {node('system')}[[{label('<b>' + m['system']['name'] + '</b>')}]]"]
     for a in ctx.get("actors", []):
         o, c = shape[a["kind"]]
-        out.append(f"  {node(a['id'])}{o}{label('<b>' + a['id'] + '</b>', a['description'])}{c}")
+        out.append(f"  {node(a['id'])}{o}{label(a['id'])}{c}")
     for f in ctx.get("flows", []):
-        out.append(f"  {node(f['from'])} -->|{label(f['data'])}| {node(f['to'])}")
+        arrow = f"-->|{label(f['data'])}|" if f.get("data") else "-->"
+        out.append(f"  {node(f['from'])} {arrow} {node(f['to'])}")
     return fence(out)
 
 

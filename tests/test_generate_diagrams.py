@@ -15,8 +15,10 @@ import generate_diagrams as gd  # noqa: E402
 from test_check_architecture import FILES, MANIFEST, Project  # noqa: E402
 
 FULL = dict(copy.deepcopy(MANIFEST), **{
-    "context": {"actors": [{"id": "user", "kind": "person", "description": 'says "hi"'}],
-                "flows": [{"from": "user", "to": "system", "data": "button press"}]},
+    "context": {"actors": [{"id": "user", "kind": "person", "description": "presses buttons"},
+                           {"id": "cloud", "kind": "system", "description": "backend"}],
+                "flows": [{"from": "user", "to": "system", "data": 'says "hi"'},
+                          {"from": "user", "to": "cloud"}]},
     "hardware": {"buses": [{"id": "spi2", "kind": "spi", "description": "SPI"}],
                  "devices": [{"id": "nor", "bus": "spi2", "description": "NOR flash"}]},
     "tasks": [{"id": "ui_task", "component": "ui", "priority": 3, "stack": 4096}],
@@ -43,6 +45,13 @@ class Render(unittest.TestCase):
     def test_quotes_escaped_and_ids_prefixed(self):
         self.assertIn("says #quot;hi#quot;", self.text)
         self.assertIn("n_user -->|", self.text)
+
+    def test_context_names_only_and_optional_label(self):
+        ctx = self.text.split("## Context")[1].split("## Block")[0]
+        self.assertIn('n_user(["user"])', ctx)
+        self.assertNotIn("presses buttons", ctx)
+        self.assertIn('n_system[["<b>demo</b>"]]', ctx)
+        self.assertIn("n_user --> n_cloud", ctx)
 
     def test_block_puts_devices_outside_the_chip(self):
         block = self.text.split("## Block")[1].split("## Organigram")[0]

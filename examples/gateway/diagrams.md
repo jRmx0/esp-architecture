@@ -24,7 +24,9 @@ flowchart LR
 
 ## Block
 
-Level 1, hardware: the processor and the devices outside it, one line per bus. The ESP32-WROVER-E module has integrated 16 MB flash and 8 MB PSRAM.
+### Level 1a: hardware
+
+The processor and the devices outside it, one line per bus. The ESP32-WROVER-E module has integrated 16 MB flash and 8 MB PSRAM.
 
 ```mermaid
 flowchart LR
@@ -38,6 +40,31 @@ flowchart LR
   n_ch9102 ---|"UART0"| cpu_box
   cpu_box ---|"GPIO"| n_user_led
   cpu_box ---|"UART2"| n_autopilot_board
+  classDef device fill:none,stroke:#888
+  class n_sim7600,n_user_led,n_autopilot_board,n_ch9102 device
+```
+
+### Level 1b: software
+
+The same hardware, each bus a box inside the processor: the drivers to write.
+
+```mermaid
+flowchart LR
+  subgraph cpu_box["<b>ESP32-WROVER-E</b>"]
+    n_uart_modem["UART1"]
+    n_uart2_board["UART2"]
+    n_uart0_console["UART0"]
+    n_gpio_board["GPIO"]
+  end
+  n_sim7600["SIM7600 modem"]
+  n_user_led["user LED"]
+  n_autopilot_board["autopilot board"]
+  n_ch9102["USB-UART bridge"]
+  n_sim7600 --- n_uart_modem
+  n_sim7600 --- n_gpio_board
+  n_ch9102 --- n_uart0_console
+  n_gpio_board --- n_user_led
+  n_uart2_board --- n_autopilot_board
   classDef device fill:none,stroke:#888
   class n_sim7600,n_user_led,n_autopilot_board,n_ch9102 device
 ```

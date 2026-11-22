@@ -57,16 +57,22 @@ def bus_ids(device):
     return [device["bus"]] if isinstance(device["bus"], str) else device["bus"]
 
 
+# Kinds whose devices use their own pins or channels: several devices on one do not contend.
+SEPARATE_PINS = {"gpio", "adc", "pwm"}
+
+
 def block(m):
-    """Level 1, hardware only: one processor box and each device outside it, joined by one line per
-    bus, labelled with the bus's peripheral. Buses drawn inside the processor, as driver code, and
-    components come in lower levels."""
-    # A flowchart, not block-beta: block-beta draws no edge labels and pins boxes to a grid.
-    # In LR, a device on an edge `device --- processor` sits left, `processor --- device` right.
+    """Level 1: a hardware and a software block diagram. Hardware: one processor box and each
+    device outside it, joined by one line per bus, labelled with the bus's peripheral. Software:
+    the same, but each bus is a box inside the processor, because it is driver code to write.
+    Components come in lower levels."""
+    # Flowcharts, not block-beta: block-beta draws no edge labels and pins boxes to a grid.
+    # In LR, a device on an edge `device --- x` sits left, `x --- device` right.
     hw = m.get("hardware", {})
     buses, devices = hw.get("buses", []), hw.get("devices", [])
     on = {b["id"]: [d for d in devices if b["id"] in bus_ids(d)] for b in buses}
     tag = {b["id"]: b.get("peripheral", b["kind"].upper()) for b in buses}
+    shared = [b["id"] for b in buses if len(on[b["id"]]) > 1 and b["kind"] not in SEPARATE_PINS]
     # Devices sharing their first bus stay on one side; groups go largest first to the side with
     # fewer lines, so the processor stays in the middle.
     groups = {}
@@ -77,27 +83,26 @@ def block(m):
         i = count[1] < count[0]
         sides[i].extend(g)
         count[i] += sum(len(bus_ids(d)) for d in g)
-
-    # cpu_box has no n_ prefix, so no device id can collide with it
-    out = ["flowchart LR", f"  cpu_box[{label('<b>' + hw.get('processor', m['system']['name']) + '</b>')}]"]
+    links = [(side, d, b) for side, ds in enumerate(sides) for d in ds for b in bus_ids(d)]
+    title = label("<b>" + hw.get("processor", m["system"]["name"]) + "</b>")
     # names only: what a device holds is a software decision, shown in lower levels
-    out += [f"  {node(d['id'])}[{label(d.get('name', d['id']))}]" for d in devices]
-    # GPIO lines are separate pins, so several devices on GPIO do not contend
-    shared = [b["id"] for b in buses if len(on[b["id"]]) > 1 and b["kind"] != "gpio"]
-    red, n = [], 0
-    for side, ds in enumerate(sides):
-        for d in ds:
-            for b in bus_ids(d):
-                if b in shared:
-                    red.append(str(n))
-                n += 1
-                ends = (node(d["id"]), "cpu_box") if side == 0 else ("cpu_box", node(d["id"]))
-                out.append(f"  {ends[0]} ---|{label(tag[b])}| {ends[1]}")
-    if devices:
-        out += ["  classDef device fill:none,stroke:#888", f"  class {','.join(node(d['id']) for d in devices)} device"]
-    if red:
-        out.append(f"  linkStyle {','.join(red)} {RED}")
-    return fence(out), shared
+    boxes = [f"  {node(d['id'])}[{label(d.get('name', d['id']))}]" for d in devices]
+    style = ["  classDef device fill:none,stroke:#888",
+             f"  class {','.join(node(d['id']) for d in devices)} device"] if devices else []
+    red = ",".join(str(n) for n, (_, _, b) in enumerate(links) if b in shared)
+    red = [f"  linkStyle {red} {RED}"] if red else []
+
+    # cpu_box has no n_ prefix, so no device or bus id can collide with it
+    hard = ["flowchart LR", f"  cpu_box[{title}]", *boxes]
+    hard += [f"  {node(d['id'])} ---|{label(tag[b])}| cpu_box" if side == 0 else
+             f"  cpu_box ---|{label(tag[b])}| {node(d['id'])}" for side, d, b in links]
+    soft = ["flowchart LR", f"  subgraph cpu_box[{title}]"]
+    soft += [f"    {node(b['id'])}[{label(tag[b['id']])}]" for b in buses] + ["  end", *boxes]
+    soft += [f"  {node(d['id'])} --- {node(b)}" if side == 0 else f"  {node(b)} --- {node(d['id'])}"
+             for side, d, b in links]
+    if shared:
+        soft += [f"  classDef shared {RED}", f"  class {','.join(node(b) for b in shared)} shared"]
+    return fence(hard + style + red), fence(soft + style + red), shared
 
 
 def tasks(m):
@@ -158,16 +163,18 @@ def render(m, src, level=2):
     note = (f" Red boxes: used by more than one component ({', '.join(shared)}); a shared resource needs care "
             "against contention." if shared else "")
     note += f" Red arrows: {upward} upward, which the layers forbid." if upward else ""
-    blk, shared_buses = block(m)
+    hard, soft, shared_buses = block(m)
     hw_text = m.get("hardware", {}).get("description")
-    bnote = (f" Red lines: a bus with more than one device ({', '.join(shared_buses)}); a shared resource needs care "
-             "against contention."
-             if shared_buses else "")
+    bnote = (f" Red: a bus with more than one device ({', '.join(shared_buses)}); they share its lines, and a shared "
+             "resource needs care against contention." if shared_buses else "")
     return "\n".join([
         BEGIN.format(src=src), "",
         f"{h} Context", "", "The device and the world around it.", "", context(m), "",
-        f"{h} Block", "", "Level 1, hardware: the processor and the devices outside it, one line per bus."
-        + (f" {hw_text}" if hw_text else "") + bnote, "", blk, "",
+        f"{h} Block", "",
+        f"{h}# Level 1a: hardware", "", "The processor and the devices outside it, one line per bus."
+        + (f" {hw_text}" if hw_text else "") + bnote, "", hard, "",
+        f"{h}# Level 1b: software", "", "The same hardware, each bus a box inside the processor: the drivers to write.",
+        "", soft, "",
         f"{h} Organigram", "", "Who calls whom, from the top down (`depends_on`)." + note, "", org + tasks(m), "",
         f"{h} Layering", "", "Layers from the top (application) to the bottom (platform).", "", layering(m), "",
         END,

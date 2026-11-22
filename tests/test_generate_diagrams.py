@@ -40,7 +40,7 @@ class Render(unittest.TestCase):
     def test_four_diagrams_in_order(self):
         heads = [l for l in self.text.splitlines() if l.startswith("## ")]
         self.assertEqual(heads, ["## Context", "## Block", "## Organigram", "## Layering"])
-        self.assertEqual(self.text.count("```mermaid"), 4)
+        self.assertEqual(self.text.count("```mermaid"), 5)  # block level 1 has two
 
     def test_quotes_escaped_and_ids_prefixed(self):
         self.assertIn("says #quot;hi#quot;", self.text)
@@ -59,10 +59,10 @@ class Render(unittest.TestCase):
         self.assertIn('cpu_box["<b>demo</b>"]', block)  # no processor: the system name
         self.assertIn('n_nor["nor"]', block)
         self.assertIn('n_nor ---|"SPI"| cpu_box', block)  # no peripheral: the kind in capitals
-        self.assertNotIn("n_spi2", block)  # buses are lines, not boxes
+        self.assertNotIn("n_spi2", block.split("### Level 1b")[0])  # hardware: buses are lines, not boxes
         self.assertNotIn("n_ui", block)
         self.assertNotIn("n_flash", block)
-        self.assertNotIn("Red lines", self.text)
+        self.assertNotIn("Red:", self.text)
         org = self.text.split("## Organigram")[1].split("## Layering")[0]
         self.assertIn("| `ui_task` | ui | 3 | 4096 |", org)
 
@@ -83,14 +83,14 @@ class Render(unittest.TestCase):
         edges = [l.strip() for l in block.splitlines() if "---|" in l]
         self.assertEqual(edges, ['n_nor ---|"SPI"| cpu_box', 'n_lcd ---|"SPI"| cpu_box', 'cpu_box ---|"I2C"| n_imu'])
         self.assertIn("linkStyle 0,1 stroke:#d33", block)
-        self.assertIn("Red lines: a bus with more than one device (spi2)", text)
+        self.assertIn("Red: a bus with more than one device (spi2)", text)
 
     def test_block_hardware_description_in_text_not_in_diagram(self):
         m = copy.deepcopy(FULL)
         m["hardware"]["processor"] = "ESP32-WROVER-E"
         m["hardware"]["description"] = "Integrated flash and PSRAM."
         block = gd.render(m, "x").split("## Block")[1].split("## Organigram")[0]
-        note, diagram = block.split("```mermaid")
+        note, diagram = block.split("```mermaid")[:2]
         self.assertIn("one line per bus. Integrated flash and PSRAM.", note)
         self.assertNotIn("Integrated", diagram)
         self.assertIn('cpu_box["<b>ESP32-WROVER-E</b>"]', diagram)
@@ -111,6 +111,37 @@ class Render(unittest.TestCase):
         self.assertIn('cpu_box ---|"UART"| n_mcu', block)
         self.assertIn("class n_modem,n_led,n_mcu device", block)
         self.assertNotIn("linkStyle", block)  # two devices on GPIO pins do not contend
+
+    def test_block_software_buses_inside_the_processor(self):
+        m = copy.deepcopy(FULL)
+        m["hardware"] = {
+            "processor": "ESP32-S3",
+            "buses": [{"id": "spi2", "kind": "spi", "peripheral": "SPI2", "description": "s"},
+                      {"id": "pins", "kind": "gpio", "description": "g"}],
+            "devices": [{"id": "nor", "bus": "spi2", "description": "n"},
+                        {"id": "lcd", "bus": ["spi2", "pins"], "description": "l"},
+                        {"id": "btn", "bus": "pins", "description": "b"}]}
+        text = gd.render(m, "x")
+        self.assertLess(text.index("### Level 1a: hardware"), text.index("### Level 1b: software"))
+        soft = text.split("### Level 1b: software")[1].split("```")[1]
+        chip = soft.split('subgraph cpu_box["<b>ESP32-S3</b>"]')[1].split("\n  end")[0]
+        self.assertIn('n_spi2["SPI2"]', chip)
+        self.assertIn('n_pins["GPIO"]', chip)  # no peripheral: the kind in capitals
+        self.assertNotIn("n_nor", chip)  # devices sit outside the processor
+        edges = [l.strip() for l in soft.splitlines() if " --- " in l]
+        self.assertEqual(edges, ["n_nor --- n_spi2", "n_lcd --- n_spi2", "n_lcd --- n_pins", "n_pins --- n_btn"])
+        self.assertIn("class n_spi2 shared", soft)
+        self.assertIn("linkStyle 0,1 stroke:#d33", soft)
+
+    def test_block_shared_only_where_devices_share_lines(self):
+        m = copy.deepcopy(FULL)
+        kinds = ["uart", "i2c", "gpio", "adc", "pwm"]
+        m["hardware"] = {
+            "buses": [{"id": k, "kind": k, "description": k} for k in kinds],
+            "devices": [{"id": f"{k}{i}", "bus": k, "description": k} for k in kinds for i in (1, 2)]}
+        _, soft, shared = gd.block(m)
+        self.assertEqual(shared, ["uart", "i2c"])  # GPIO, ADC and PWM devices use their own pins
+        self.assertIn("class n_uart,n_i2c shared", soft)
 
     def test_block_device_name_falls_back_to_id(self):
         m = copy.deepcopy(FULL)

@@ -88,22 +88,28 @@ def block(m):
     rows = ([], [])
     for cells in sorted(groups, key=len, reverse=True):
         rows[len(rows[1]) < len(rows[0])].extend(cells)
-    height = max(len(r) for r in rows)
+    height = max(1, *map(len, rows))  # one row at least, for the processor's name
     rows = [r + [(None, None)] * (height - len(r)) for r in rows]
     title = hw.get("processor", m["system"]["name"])
 
+    # every label stays on one line: the side columns are separate grids, so rows line up with
+    # the buses only while all cells are the same height
     def dev(d):
-        return f"    {node(d['id'])}[{label(d['id'], *d.get('holds', []))}]" if d else "    space"
+        if not d:
+            return "    space"
+        return f"    {node(d['id'])}[{label(d['id'] + (': ' + ', '.join(d['holds']) if d.get('holds') else ''))}]"
 
     def bus(b):
         return f"    {node(b['id'])}[/{label(b.get('peripheral', b['kind'].upper()))}/]" if b else "    space"
 
-    out = ["block-beta", "  columns 5", "  block:left", "    columns 1", "    space"]
+    out = ["block-beta", "  columns 5", "  block:left", "    columns 1"]
     out += [dev(d) for _, d in rows[0]]
-    out += ["  end", "  block:chip:3", "    columns 3", f"    chip_title[{label('<b>' + title + '</b>')}]:3"]
-    for (lb, _), (rb, _) in zip(*rows):
-        out += [bus(lb), "    space", bus(rb)]
-    out += ["  end", "  block:right", "    columns 1", "    space"]
+    out += ["  end", "  block:chip:3", "    columns 3"]
+    for n, ((lb, _), (rb, _)) in enumerate(zip(*rows)):
+        # the processor's name sits in the empty middle column, not a row of its own
+        middle = f"    chip_title[{label('<b>' + title + '</b>')}]" if n == 0 else "    space"
+        out += [bus(lb), middle, bus(rb)]
+    out += ["  end", "  block:right", "    columns 1"]
     out += [dev(d) for _, d in rows[1]]
     out += ["  end", "  style left fill:none,stroke:none", "  style right fill:none,stroke:none"]
     out += [f"  {node(b)} --- {node(d['id'])}" for d in devices for b in bus_ids(d)]

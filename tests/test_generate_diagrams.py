@@ -57,7 +57,7 @@ class Render(unittest.TestCase):
         block = self.text.split("## Block")[1].split("## Organigram")[0]
         self.assertIn("block-beta", block)
         chip = block.split("block:chip:3")[1].split("\n  end")[0]
-        self.assertIn('chip_title["<b>demo</b>"]:3', chip)  # no processor: the system name
+        self.assertIn('chip_title["<b>demo</b>"]', chip)  # no processor: the system name
         self.assertIn("n_spi2[/", chip)
         self.assertNotIn("n_ui", block)
         self.assertNotIn("n_flash", block)
@@ -79,14 +79,14 @@ class Render(unittest.TestCase):
                         {"id": "imu", "bus": "i2c0", "description": "i"}]}
         text = gd.render(m, "x")
         block = text.split("## Block")[1].split("```")[1]
-        chip = block.split("block:chip:3")[1].split("\n  end")[0].splitlines()[3:]
+        chip = block.split("block:chip:3")[1].split("\n  end")[0].splitlines()[2:]
         self.assertEqual([l.strip().split("[")[0] for l in chip],
-                         ["n_spi2", "space", "n_i2c0", "space", "space", "space"])
+                         ["n_spi2", "chip_title", "n_i2c0", "space", "space", "space"])
         left = block.split("block:left")[1].split("\n  end")[0]
-        self.assertIn('n_nor["nor<br/>fonts<br/>images"]', left)
+        self.assertIn('n_nor["nor: fonts, images"]', left)
         self.assertLess(left.index("n_nor"), left.index("n_lcd"))
         self.assertIn("n_imu[", block.split("block:right")[1])
-        self.assertIn('chip_title["<b>ESP32-S3</b>"]:3', block)
+        self.assertIn('chip_title["<b>ESP32-S3</b>"]', block)
         self.assertIn("class n_spi2 shared", block)
         self.assertIn("Red buses: more than one device (spi2)", text)
 
@@ -106,13 +106,19 @@ class Render(unittest.TestCase):
         self.assertIn("n_u1 --- n_modem", block)
         self.assertIn("n_pins --- n_modem", block)
         # u1 and pins share the modem, so both sit on one edge (the larger group goes left)
-        chip = [l.strip().split("[")[0] for l in block.split("block:chip:3")[1].split("\n  end")[0].splitlines()[3:]]
-        self.assertEqual(chip, ["n_u1", "space", "n_u2", "n_pins", "space", "space"])
+        chip = [l.strip().split("[")[0] for l in block.split("block:chip:3")[1].split("\n  end")[0].splitlines()[2:]]
+        self.assertEqual(chip, ["n_u1", "chip_title", "n_u2", "n_pins", "space", "space"])
         left = block.split("block:left")[1].split("\n  end")[0]
         self.assertLess(left.index("n_modem"), left.index("n_led"))
         self.assertIn("class n_mcu planned", block)
         self.assertIn("class n_modem,n_led device", block)
         self.assertNotIn("shared", block)  # two devices on GPIO pins do not contend
+
+    def test_block_without_hardware_still_names_the_processor(self):
+        m = copy.deepcopy(FULL)
+        del m["hardware"]
+        block = gd.render(m, "x").split("## Block")[1].split("```")[1]
+        self.assertIn('chip_title["<b>demo</b>"]', block)
 
     def test_layers_stacked_in_manifest_order(self):
         layering = self.text.split("## Layering")[1]

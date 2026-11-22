@@ -460,3 +460,36 @@ block-beta
   class sim7600,user_led,ch9102,autopilot_board box
   class devs group
 ```
+
+## Level 2, subsystems: v10
+
+v9 still lost the spans. The one difference left from v5b is that v5b's device row had a box spanning two columns (`sim7600:2`). v10 tests that: SIM7600 spans two columns, followed by a gap, in an eight-column device row.
+
+```mermaid
+%%{init: {"block": {"padding": 0}}}%%
+block-beta
+  columns 1
+  block:devs
+    columns 8
+    sim7600["SIM7600 modem"]:2 space user_led["user LED"] space ch9102["USB-UART bridge"] space autopilot_board["autopilot board"]
+  end
+  space
+  block:cpu
+    columns 7
+    title["<b>ESP32-WROVER-E</b>"]:7
+    uart1["<b>UART1</b>"] space gpio["<b>GPIO</b>"] space uart0["<b>UART0</b>"] space uart2["<b>UART2</b>"]
+    cellular["<b>cellular</b>"]:3 app["<b>app</b>"] server_link["<b>server_link</b>"]:2 autopilot_link["<b>autopilot_link</b>"]
+    platform["<b>platform</b>"]:7
+  end
+  uart1 --- sim7600
+  gpio --- sim7600
+  gpio --- user_led
+  uart0 --- ch9102
+  uart2 --- autopilot_board
+  classDef title fill:none,stroke:none
+  classDef box fill:none,stroke:#888
+  classDef group fill:none,stroke:none
+  class title title
+  class sim7600,user_led,ch9102,autopilot_board box
+  class devs group
+```

@@ -6,7 +6,7 @@ Reads <project>/arch/architecture.yaml, arch/requirements.md and arch/decisions/
 Exit 0 when every component, layer and subsystem cites a decision, every cited ID exists,
 and every decision cites a requirement; 1 with one error per line otherwise; 2 on bad usage.
 
-  requirements.md   tables "| ID | Title | Requirement | Source |", one row per requirement,
+  requirements.md   tables "| ID | Title | Requirement |", one row per requirement,
                     its first cell the ID: F-REQ-nnn (functional) or NF-REQ-nnn (non-functional)
   DEC-nnn-slug.md   "# DEC-nnn Title", then sections Context, Decision, Alternatives, Requirements,
                     and optionally Rules (RULE-nnn IDs from the plugin's rules/rules.yaml)

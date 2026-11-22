@@ -21,13 +21,13 @@ MANIFEST = {
                     "decisions": ["DEC-002"], "requirements": ["F-REQ-001"]}],
 }
 
-REQS = ("# Requirements\n\n## Display\n\n| ID | Title | Requirement | Source |\n|---|---|---|---|\n"
-        "| F-REQ-001 | Show the state | The device shows its state. | owner |\n"
-        "| NF-REQ-002 | Boot fast | Under 2 s; not F-REQ-009. | owner |\n")
+REQS = ("# Requirements\n\n## Display\n\n| ID | Title | Requirement |\n|---|---|---|\n"
+        "| F-REQ-001 | Show the state | The device shows its state. |\n"
+        "| NF-REQ-002 | Boot fast | Under 2 s; not F-REQ-009. |\n")
 
 
 def req_row(req, title="Extra"):
-    return f"| {req} | {title} | Text. | owner |\n"
+    return f"| {req} | {title} | Text. |\n"
 
 
 def record(dec, reqs="F-REQ-001"):

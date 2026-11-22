@@ -106,11 +106,14 @@ Examples, rendered on GitHub: `examples/gateway/diagrams.md` (target) and `examp
 
 ## 7. Requirements and decision records
 
-Every subsystem, layer and component in the manifest exists because of a decision, and every decision serves a requirement. Both live next to the manifest:
+Every subsystem, layer and component in the manifest exists because of a decision, and every decision serves a requirement. Both live next to the manifest.
+
+**Requirements are the source of truth.** Code, documentation, issues and decision records reference requirement IDs; a requirement never points at them. A new feature starts with its requirement, and its issue, code and documentation cite the ID. A requirement may name an outside specification it relies on (an interface contract, a standard) the way it would name a standard, but not the project's own code or pages.
+
 
 | File | Format |
 |---|---|
-| `arch/requirements.md` | Tables with the columns `ID \| Title \| Requirement \| Source`, one row per requirement: its ID in the first cell: `F-REQ-nnn` for a functional requirement (what the system does) or `NF-REQ-nnn` for a non-functional one (how well it does it, and the limits it fits in), a short title, what is required (the outcome, not how it is built) and where it came from (an issue, a wiki page, the owner). `##` headings may group the tables by area |
+| `arch/requirements.md` | Tables with the columns `ID \| Title \| Requirement`, one row per requirement: its ID in the first cell: `F-REQ-nnn` for a functional requirement (what the system does) or `NF-REQ-nnn` for a non-functional one (how well it does it, and the limits it fits in), a short title, and what is required and why (the outcome, not how it is built). `##` headings may group the tables by area |
 | `arch/decisions/DEC-nnn-slug.md` | One file per decision. First heading `# DEC-nnn Title`, then the sections `## Context` (the problem), `## Decision` (what was chosen), `## Alternatives` (what else was considered and why not) and `## Requirements` (the `REQ-nnn` IDs it serves), and optionally `## Rules` (the `RULE-nnn` IDs it applies, §8) |
 
 The manifest cites them: `decisions` on each subsystem, layer and component, and optional `requirements` on a component.

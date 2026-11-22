@@ -8,6 +8,7 @@
   "required": [
     "version",
     "system",
+    "subsystems",
     "layers",
     "components"
   ],
@@ -67,15 +68,14 @@
           }
         },
         "flows": {
-          "description": "What moves between the system and an actor. `system` names the device itself.",
+          "description": "What moves between two parties: the system (`system`) and an actor, or two actors. `data` is an optional short arrow label.",
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
             "required": [
               "from",
-              "to",
-              "data"
+              "to"
             ],
             "properties": {
               "from": {
@@ -98,6 +98,16 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "processor": {
+          "description": "The chip or module, e.g. ESP32-WROVER-E; titles the processor box (default: the system name).",
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "description": "What the processor or module has inside (e.g. integrated flash and PSRAM); shown in the text above the block diagram, not in it.",
+          "type": "string",
+          "minLength": 1
+        },
         "buses": {
           "type": "array",
           "items": {
@@ -111,6 +121,11 @@
             "properties": {
               "id": {
                 "$ref": "#/$defs/id"
+              },
+              "peripheral": {
+                "description": "The peripheral instance that labels the bus, e.g. UART2 or SPI0/1 (default: the kind in capitals).",
+                "type": "string",
+                "minLength": 1
               },
               "kind": {
                 "enum": [
@@ -149,13 +164,61 @@
                 "$ref": "#/$defs/id"
               },
               "bus": {
-                "$ref": "#/$defs/id"
+                "description": "The bus it is wired to, or a list when it uses several (e.g. a modem on UART and GPIO).",
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/id"
+                  },
+                  {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "$ref": "#/$defs/id"
+                    }
+                  }
+                ]
               },
               "description": {
                 "type": "string",
                 "minLength": 1
+              },
+              "name": {
+                "description": "Display name in diagram boxes (e.g. SIM7600 modem); the id when absent.",
+                "type": "string",
+                "minLength": 1
+              },
+              "holds": {
+                "description": "What the device stores (e.g. firmware version, image data); a software decision, so the hardware level does not show it.",
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
               }
             }
+          }
+        }
+      }
+    },
+    "subsystems": {
+      "description": "Block level 2: the few bundles the components fall into, e.g. cellular, server link. Mandatory; a small project may have one.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
           }
         }
       }
@@ -199,11 +262,16 @@
         "additionalProperties": false,
         "required": [
           "id",
+          "subsystem",
           "layer",
           "description"
         ],
         "properties": {
           "id": {
+            "$ref": "#/$defs/id"
+          },
+          "subsystem": {
+            "description": "The subsystem it belongs to.",
             "$ref": "#/$defs/id"
           },
           "layer": {

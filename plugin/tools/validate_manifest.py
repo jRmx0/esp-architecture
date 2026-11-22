@@ -13,19 +13,24 @@ import yaml
 SCHEMA = pathlib.Path(__file__).resolve().parent.parent / "schema" / "architecture.schema.json"
 
 
-def validate(manifest):
-    """Return a list of error strings; empty means valid."""
+def schema_errors(manifest):
     schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
-    errors = [
+    return [
         f"{'/'.join(map(str, e.absolute_path)) or '(root)'}: {e.message}"
         for e in jsonschema.Draft202012Validator(schema).iter_errors(manifest)
     ]
+
+
+def validate(manifest):
+    """Return a list of error strings; empty means valid."""
+    errors = schema_errors(manifest)
     if errors:
         return errors  # cross-reference checks assume the shape is right
 
     ctx = manifest.get("context", {})
     hw = manifest.get("hardware", {})
     layers = [l["id"] for l in manifest["layers"]]
+    subsystems = [s["id"] for s in manifest["subsystems"]]
     comps = {c["id"]: c for c in manifest["components"]}
     actors = [a["id"] for a in ctx.get("actors", [])]
     buses = [b["id"] for b in hw.get("buses", [])]
@@ -33,7 +38,7 @@ def validate(manifest):
 
     # one namespace for everything a diagram draws as a box
     seen = {"system"}
-    for kind, ids in (("layer", layers), ("component", [c["id"] for c in manifest["components"]]),
+    for kind, ids in (("subsystem", subsystems), ("layer", layers), ("component", [c["id"] for c in manifest["components"]]),
                       ("actor", actors), ("bus", buses), ("device", devices)):
         for i in ids:
             if i in seen:
@@ -43,12 +48,11 @@ def validate(manifest):
     errors += [f"task {t}: id used twice" for t in sorted({t for t in task_ids if task_ids.count(t) > 1})]
 
     for d in hw.get("devices", []):
-        if d["bus"] not in buses:
-            errors.append(f"device {d['id']}: bus {d['bus']} is not declared")
+        for b in [d["bus"]] if isinstance(d["bus"], str) else d["bus"]:
+            if b not in buses:
+                errors.append(f"device {d['id']}: bus {b} is not declared")
     for f in ctx.get("flows", []):
         ends = {f["from"], f["to"]}
-        if "system" not in ends:
-            errors.append(f"flow {f['from']} -> {f['to']}: one end must be 'system'")
         for e in ends - {"system"}:
             if e not in actors:
                 errors.append(f"flow {f['from']} -> {f['to']}: {e} is not an actor")
@@ -56,6 +60,11 @@ def validate(manifest):
         for t in manifest.get(kind, []):
             if t["component"] not in comps:
                 errors.append(f"{kind[:-1]} {t['id']}: component {t['component']} is not declared")
+
+    used = {c["subsystem"] for c in manifest["components"]}
+    errors += [f"component {c['id']}: subsystem {c['subsystem']} is not declared"
+               for c in manifest["components"] if c["subsystem"] not in subsystems]
+    errors += [f"subsystem {s}: no component belongs to it" for s in subsystems if s not in used]
 
     rank = {l: i for i, l in enumerate(layers)}  # 0 = top
     sideways = manifest.get("allow_sideways", True)

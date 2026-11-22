@@ -80,6 +80,23 @@ def owned_files(root, comps):
     return owners
 
 
+def include_edges(root, owners):
+    """{(src, dst): first "file:line"} for every include of another component's header.
+    Headers no component owns (ESP-IDF, libc) are skipped."""
+    # header basename -> owning component (first owner wins when ambiguous: reported separately)
+    header_owner = {}
+    for f, ids in owners.items():
+        header_owner.setdefault(pathlib.PurePosixPath(f).name, ids[0])
+    edges = {}
+    for f, ids in sorted(owners.items()):
+        text = (root / f).read_text(encoding="utf-8", errors="replace")
+        for m in INCLUDE.finditer(text):
+            dst = header_owner.get(pathlib.PurePosixPath(m.group(1)).name)
+            if dst is not None and dst != ids[0] and (ids[0], dst) not in edges:
+                edges[(ids[0], dst)] = f"{f}:{text.count(chr(10), 0, m.start()) + 1}"
+    return edges
+
+
 def find_violations(root, manifest):
     """{baseline key: example detail}."""
     comps = {c["id"]: c for c in manifest["components"]}
@@ -94,23 +111,10 @@ def find_violations(root, manifest):
         if "path" in c and not any(c["id"] in ids for ids in owners.values()):
             found[f"missing {c['id']}"] = f"no source files under {c['path']}"
 
-    # header basename -> owning component (first owner wins when ambiguous: reported above)
-    header_owner = {}
-    for f, ids in owners.items():
-        header_owner.setdefault(pathlib.PurePosixPath(f).name, ids[0])
-
-    for f, ids in sorted(owners.items()):
-        src = ids[0]
-        text = (root / f).read_text(encoding="utf-8", errors="replace")
-        for m in INCLUDE.finditer(text):
-            dst = header_owner.get(pathlib.PurePosixPath(m.group(1)).name)
-            if dst is None or dst == src or dst in comps[src].get("depends_on", []):
-                continue  # not one of ours (ESP-IDF, libc), own header, or allowed
-            key = f"include {src} -> {dst}"
-            if key not in found:
-                line = text.count("\n", 0, m.start()) + 1
-                upward = rank[comps[dst]["layer"]] < rank[comps[src]["layer"]]
-                found[key] = f"{f}:{line}" + (" (upward)" if upward else "")
+    for (src, dst), where in include_edges(root, owners).items():
+        if dst not in comps[src].get("depends_on", []):
+            upward = rank[comps[dst]["layer"]] < rank[comps[src]["layer"]]
+            found[f"include {src} -> {dst}"] = where + (" (upward)" if upward else "")
 
     component_dirs = {d.resolve(): d for d in idf_component_dirs(root)}
     by_dir = {}

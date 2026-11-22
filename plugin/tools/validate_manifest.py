@@ -13,13 +13,17 @@ import yaml
 SCHEMA = pathlib.Path(__file__).resolve().parent.parent / "schema" / "architecture.schema.json"
 
 
-def validate(manifest):
-    """Return a list of error strings; empty means valid."""
+def schema_errors(manifest):
     schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
-    errors = [
+    return [
         f"{'/'.join(map(str, e.absolute_path)) or '(root)'}: {e.message}"
         for e in jsonschema.Draft202012Validator(schema).iter_errors(manifest)
     ]
+
+
+def validate(manifest):
+    """Return a list of error strings; empty means valid."""
+    errors = schema_errors(manifest)
     if errors:
         return errors  # cross-reference checks assume the shape is right
 

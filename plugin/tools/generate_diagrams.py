@@ -22,6 +22,7 @@ BEGIN = "<!-- esp-architecture:diagrams begin: generated from {src} by generate_
 END = "<!-- esp-architecture:diagrams end -->"
 SECTION = re.compile(r"<!-- esp-architecture:diagrams begin.*?<!-- esp-architecture:diagrams end -->", re.S)
 RED = "stroke:#d33,stroke-width:2px"
+NBSP = "&nbsp;"
 PER_LINE = 6  # components per line in the layering grid
 
 
@@ -92,15 +93,15 @@ def block(m):
     rows = [r + [(None, None)] * (height - len(r)) for r in rows]
     title = hw.get("processor", m["system"]["name"])
 
-    # every label stays on one line: the side columns are separate grids, so rows line up with
-    # the buses only while all cells are the same height
+    # Every cell has exactly two lines: the side columns are separate grids, so devices line up
+    # with their buses only while all cells are the same height. A blank line is a no-break space.
     def dev(d):
         if not d:
             return "    space"
-        return f"    {node(d['id'])}[{label(d['id'] + (': ' + ', '.join(d['holds']) if d.get('holds') else ''))}]"
+        return f"    {node(d['id'])}[{label(d['id'], ', '.join(d.get('holds', [])) or NBSP)}]"
 
     def bus(b):
-        return f"    {node(b['id'])}[/{label(b.get('peripheral', b['kind'].upper()))}/]" if b else "    space"
+        return f"    {node(b['id'])}[/{label(b.get('peripheral', b['kind'].upper()), b['id'])}/]" if b else "    space"
 
     out = ["block-beta", "  columns 5", "  block:left", "    columns 1"]
     out += [dev(d) for _, d in rows[0]]

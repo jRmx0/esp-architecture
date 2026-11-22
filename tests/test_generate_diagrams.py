@@ -62,7 +62,7 @@ class Render(unittest.TestCase):
         self.assertNotIn("n_ui", block)
         self.assertNotIn("n_flash", block)
         left = block.split("block:left")[1].split("\n  end")[0]
-        self.assertIn('n_nor["nor"]', left)
+        self.assertIn('n_nor["nor<br/>&nbsp;"]', left)
         self.assertIn("n_spi2 --- n_nor", block)
         self.assertNotIn("Red buses", self.text)
         org = self.text.split("## Organigram")[1].split("## Layering")[0]
@@ -83,7 +83,7 @@ class Render(unittest.TestCase):
         self.assertEqual([l.strip().split("[")[0] for l in chip],
                          ["n_spi2", "chip_title", "n_i2c0", "space", "space", "space"])
         left = block.split("block:left")[1].split("\n  end")[0]
-        self.assertIn('n_nor["nor: fonts, images"]', left)
+        self.assertIn('n_nor["nor<br/>fonts, images"]', left)
         self.assertLess(left.index("n_nor"), left.index("n_lcd"))
         self.assertIn("n_imu[", block.split("block:right")[1])
         self.assertIn('chip_title["<b>ESP32-S3</b>"]', block)
@@ -101,8 +101,8 @@ class Render(unittest.TestCase):
                         {"id": "mcu", "bus": "u2", "planned": True, "description": "p"}]}
         text = gd.render(m, "x")
         block = text.split("## Block")[1].split("```")[1]
-        self.assertIn('n_u1[/"UART1"/]', block)
-        self.assertIn('n_u2[/"UART"/]', block)  # no peripheral: the kind in capitals
+        self.assertIn('n_u1[/"UART1<br/>u1"/]', block)
+        self.assertIn('n_u2[/"UART<br/>u2"/]', block)  # no peripheral: the kind in capitals
         self.assertIn("n_u1 --- n_modem", block)
         self.assertIn("n_pins --- n_modem", block)
         # u1 and pins share the modem, so both sit on one edge (the larger group goes left)

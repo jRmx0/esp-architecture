@@ -176,6 +176,19 @@ class Render(unittest.TestCase):
         l2 = gd.render(m, "x").split("### Level 2: subsystems")[1].split("## Organigram")[0]
         self.assertIn("class n_spi2 shared", l2)  # amber, as in 1b
 
+    def test_block_level2_lines_join_connected_subsystems(self):
+        m = copy.deepcopy(FULL)
+        m["subsystems"] += [{"id": "storage", "description": "s"}, {"id": "logic", "description": "l"}]
+        m["components"][1]["subsystem"] = "storage"
+        m["components"] += [{"id": "rules", "subsystem": "logic", "layer": "app", "description": "r",
+                             "depends_on": [m["components"][1]["id"]]},
+                            {"id": "back", "subsystem": "storage", "layer": "app", "description": "b",
+                             "depends_on": ["rules"]}]  # both ways: still one line
+        l2 = gd.render(m, "x").split("### Level 2: subsystems")[1].split("## Organigram")[0]
+        lines = [l.strip() for l in l2.split("```")[1].splitlines()]
+        self.assertEqual([l for l in lines if " --- n_" in l and "n_logic" in l], ["n_logic --- n_storage"])
+        self.assertNotIn("n_core --- n_core", lines)
+
     def test_block_level2_busless_subsystems_sit_inside(self):
         m = copy.deepcopy(FULL)
         m["subsystems"] += [{"id": "storage", "description": "keeps data"}, {"id": "logic", "description": "l"}]
@@ -183,8 +196,9 @@ class Render(unittest.TestCase):
         m["components"].append({"id": "rules", "subsystem": "logic", "layer": "app", "description": "r"})
         l2 = gd.render(m, "x").split("### Level 2: subsystems")[1].split("## Organigram")[0]
         lines = [l.strip() for l in l2.split("```")[1].splitlines()]
-        self.assertEqual([l for l in lines if "~~~" in l], ["n_core ~~~ n_storage", "n_logic ~~~ n_storage"])
-        self.assertTrue(all("~~~" in l for l in lines[lines.index("n_core ~~~ n_storage"):]
+        self.assertIn("n_core --- n_storage", lines)  # a real line places core, so only logic needs one
+        self.assertEqual([l for l in lines if "~~~" in l], ["n_logic ~~~ n_storage"])
+        self.assertTrue(all("~~~" in l for l in lines[lines.index("n_logic ~~~ n_storage"):]
                             if "---" in l or "-->" in l))  # declared after every visible line
         m["components"][1]["subsystem"] = "core"  # two edge subsystems, one inner: each edge one gets a link
         m["subsystems"].append({"id": "radio", "description": "r"})

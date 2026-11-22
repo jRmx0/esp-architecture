@@ -71,7 +71,7 @@ flowchart LR
 
 ### Level 2: subsystems
 
-The subsystems inside the processor, each joined to the buses it drives.
+The subsystems inside the processor, each joined to the buses it drives and to the subsystems it is connected to.
 
 ```mermaid
 flowchart LR
@@ -99,9 +99,14 @@ flowchart LR
   n_gpio_board --- n_user_led
   n_uart2_board --- n_autopilot_board
   n_uart0_console --- n_ch9102
-  n_app ~~~ n_server_link
-  n_platform ~~~ n_cellular
-  n_app ~~~ n_autopilot_link
+  n_app --- n_platform
+  n_app --- n_server_link
+  n_app --- n_cellular
+  n_app --- n_autopilot_link
+  n_platform --- n_server_link
+  n_platform --- n_cellular
+  n_platform --- n_autopilot_link
+  n_server_link --- n_autopilot_link
   classDef bus fill:none,stroke:#888,stroke-dasharray:3 3
   class n_uart_modem,n_uart2_board,n_uart0_console,n_gpio_board bus
   classDef device fill:none,stroke:#888
@@ -148,6 +153,7 @@ flowchart TD
   n_supervisor --> n_ota
   n_supervisor --> n_gwstate
   n_supervisor --> n_metrics
+  n_supervisor --> n_ntrip
   n_mqtt_link --> n_devcert
   n_mqtt_link --> n_usage
   n_mqtt_link --> n_gw_link

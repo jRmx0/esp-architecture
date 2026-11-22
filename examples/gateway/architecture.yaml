@@ -67,7 +67,7 @@ components:
     path: main
     sources: [main/supervisor.*]
     description: Link state machine, recovery ladder, OTA confirm and report
-    depends_on: [gw_link, mqtt_link, cell, ota, gwstate, metrics]
+    depends_on: [gw_link, mqtt_link, cell, ota, gwstate, metrics, ntrip]
   - { id: mqtt_link, subsystem: server_link, layer: l3_services, path: main, sources: [main/mqtt_link.*], description: esp-mqtt client and route table, depends_on: [devcert, usage, gw_link] }
   - { id: board_link, subsystem: autopilot_link, layer: l3_services, description: "Board link to the autopilot (planned, rmx-mower-gateway#62)", depends_on: [bl_uart, mqtt_link, rmx_codec, gw_link] }
   - { id: ntrip, subsystem: autopilot_link, layer: l3_services, path: main, sources: [main/ntrip.*], description: NTRIP client, depends_on: [board_link, settings, gw_link, rmx_codec] }

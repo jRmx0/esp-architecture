@@ -113,7 +113,8 @@ def block(m):
 def subsystems(m):
     """Level 2: the processor holds one box per subsystem and one per bus; devices sit outside on
     their buses as in level 1b. Lines join a subsystem to the buses its components drive. No arrows
-    between subsystems: they relate by placement, and who calls whom is the organigram's job.
+    between subsystems: a plain line joins two when a component of one depends on one of the other,
+    either way; who calls whom is the organigram's job.
     Subsystems that drive no bus sit one column further in, away from the hardware."""
     hw = m.get("hardware", {})
     buses, devices = hw.get("buses", []), hw.get("devices", [])
@@ -132,10 +133,19 @@ def subsystems(m):
     out += [f"  {node(b)} --- {node(d['id'])}" for d in devices for b in bus_ids(d)]
     edge = list(dict.fromkeys(s for s, _ in drives))
     inner = [s["id"] for s in m["subsystems"] if s["id"] not in edge]
-    # invisible links, declared last so they shift no linkStyle index. Every edge subsystem needs one
-    # coming in, or the layout puts it in the first column with the inner ones.
-    pairs = max(len(inner), len(edge)) if inner and edge else 0
-    out += [f"  {node(inner[i % len(inner)])} ~~~ {node(edge[i % len(edge)])}" for i in range(pairs)]
+    order = {s: i for i, s in enumerate(inner + edge)}  # a line runs inner to edge, so the inner one sits left
+    sub = {c["id"]: c["subsystem"] for c in m["components"]}
+    links = {tuple(sorted((sub[c["id"]], sub[d]), key=order.get))
+             for c in m["components"] for d in c.get("depends_on", []) if d in sub and sub[d] != sub[c["id"]]}
+    out += [f"  {node(a)} --- {node(b)}" for a, b in sorted(links, key=lambda l: (order[l[0]], order[l[1]]))]
+    # invisible links, declared last so they shift no linkStyle index. Every edge subsystem needs a line
+    # coming in from an inner one and every inner one a line out to an edge one, or the layout puts
+    # them in the wrong column; only those no real line places get one.
+    lone_in = [s for s in inner if not any(a == s and b in edge for a, b in links)]
+    lone_edge = [s for s in edge if not any(b == s and a in inner for a, b in links)]
+    pairs = max(len(lone_in), len(lone_edge)) if inner and edge else 0
+    li, le = lone_in or inner, lone_edge or edge  # a lone one may pair with one a real line already places
+    out += [f"  {node(li[i % len(li)])} ~~~ {node(le[i % len(le)])}" for i in range(pairs)]
     out += ["  classDef bus fill:none,stroke:#888,stroke-dasharray:3 3"] if buses else []
     out += [f"  class {','.join(node(b['id']) for b in buses)} bus"] if buses else []
     out += ["  classDef device fill:none,stroke:#888",
@@ -217,7 +227,7 @@ def render(m, src, level=2):
         + (f" {hw_text}" if hw_text else "") + bnote, "", hard, "",
         f"{h}# Level 1b: software", "", "The same hardware, each bus a box inside the processor: the drivers to write.",
         "", soft, "",
-        f"{h}# Level 2: subsystems", "", "The subsystems inside the processor, each joined to the buses it drives.", "", subsystems(m), "",
+        f"{h}# Level 2: subsystems", "", "The subsystems inside the processor, each joined to the buses it drives and to the subsystems it is connected to.", "", subsystems(m), "",
         f"{h} Organigram", "", "Who calls whom, from the top down (`depends_on`)." + note, "", org + tasks(m), "",
         f"{h} Layering", "", "Layers from the top (application) to the bottom (platform).", "", layering(m), "",
         END,

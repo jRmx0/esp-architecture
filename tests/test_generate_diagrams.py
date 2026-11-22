@@ -66,7 +66,7 @@ class Render(unittest.TestCase):
         org = self.text.split("## Organigram")[1].split("## Layering")[0]
         self.assertIn("| `ui_task` | ui | 3 | 4096 |", org)
 
-    def test_block_lines_inside_out_holds_and_shared_bus(self):
+    def test_block_sides_holds_and_shared_bus(self):
         m = copy.deepcopy(FULL)
         m["hardware"] = {
             "processor": "ESP32-S3",
@@ -79,9 +79,10 @@ class Render(unittest.TestCase):
         block = text.split("## Block")[1].split("```")[1]
         self.assertIn('cpu_box["<b>ESP32-S3</b>"]', block)
         self.assertIn('n_nor["nor"]', block)  # holds are not shown at the hardware level
-        # every line runs from the processor out, in manifest order: no layout hints
+        # 1a has no layout hint: every line runs from the processor out
         edges = [l.strip() for l in block.splitlines() if "---|" in l]
         self.assertEqual(edges, ['cpu_box ---|"SPI"| n_nor', 'cpu_box ---|"SPI"| n_lcd', 'cpu_box ---|"I2C"| n_imu'])
+        self.assertNotIn("~~~", block)
         self.assertIn("linkStyle 0,1 stroke:#d98e04", block)
         self.assertIn("Amber: a bus shared by several devices (spi2); check contention", text)
 
@@ -129,7 +130,7 @@ class Render(unittest.TestCase):
         self.assertIn('n_pins["GPIO"]', chip)  # no peripheral: the kind in capitals
         self.assertNotIn("n_nor", chip)  # devices sit outside the processor
         edges = [l.strip() for l in soft.splitlines() if " --- " in l]
-        self.assertEqual(edges, ["n_spi2 --- n_nor", "n_spi2 --- n_lcd", "n_pins --- n_lcd", "n_pins --- n_btn"])
+        self.assertEqual(edges, ["n_nor --- n_spi2", "n_lcd --- n_spi2", "n_lcd --- n_pins", "n_pins --- n_btn"])
         self.assertIn("class n_spi2 shared", soft)
         self.assertIn("linkStyle 0,1 stroke:#d98e04", soft)
         self.assertIn("classDef shared stroke:#d98e04", soft)
@@ -158,6 +159,7 @@ class Render(unittest.TestCase):
         self.assertNotIn("classDef", block)
 
     def test_block_level2_subsystems(self):
+        self.assertNotIn("~~~", self.text)  # FULL's only subsystem drives a bus: no invisible links
         m = copy.deepcopy(FULL)
         m["subsystems"].append({"id": "storage", "description": "keeps data"})
         m["components"][1].update(subsystem="storage", hardware=["nor"])  # a device stands for its bus
@@ -185,15 +187,31 @@ class Render(unittest.TestCase):
                              "depends_on": ["rules"]}]  # both ways: still one line
         l2 = gd.render(m, "x").split("### Level 2: subsystems")[1].split("## Organigram")[0]
         lines = [l.strip() for l in l2.split("```")[1].splitlines()]
-        self.assertEqual([l for l in lines if " --- n_" in l and "n_logic" in l], ["n_storage --- n_logic"])  # manifest order
+        self.assertEqual([l for l in lines if " --- n_" in l and "n_logic" in l], ["n_logic --- n_storage"])
         self.assertNotIn("n_core --- n_core", lines)
 
-    def test_block_has_no_layout_hints(self):
+    def test_block_level2_busless_subsystems_sit_inside(self):
         m = copy.deepcopy(FULL)
         m["subsystems"] += [{"id": "storage", "description": "keeps data"}, {"id": "logic", "description": "l"}]
         m["components"][1]["subsystem"] = "storage"
         m["components"].append({"id": "rules", "subsystem": "logic", "layer": "app", "description": "r"})
-        self.assertNotIn("~~~", gd.render(m, "x"))  # Mermaid places the boxes
+        l2 = gd.render(m, "x").split("### Level 2: subsystems")[1].split("## Organigram")[0]
+        lines = [l.strip() for l in l2.split("```")[1].splitlines()]
+        self.assertIn("n_core --- n_storage", lines)  # a real line places core, so only logic needs one
+        self.assertEqual([l for l in lines if "~~~" in l], ["n_logic ~~~ n_storage"])
+        self.assertTrue(all("~~~" in l for l in lines[lines.index("n_logic ~~~ n_storage"):]
+                            if "---" in l or "-->" in l))  # declared after every visible line
+        m["components"][1]["subsystem"] = "core"  # two edge subsystems, one inner: each edge one gets a link
+        m["subsystems"].append({"id": "radio", "description": "r"})
+        m["hardware"]["buses"].append({"id": "uart1", "kind": "uart", "description": "u"})
+        m["components"].append({"id": "lte", "subsystem": "radio", "layer": "drivers", "description": "l",
+                                "hardware": ["uart1"]})
+        m["subsystems"] = [x for x in m["subsystems"] if x["id"] != "storage"]
+        l2 = gd.render(m, "x").split("### Level 2: subsystems")[1].split("## Organigram")[0]
+        self.assertEqual([l.strip() for l in l2.splitlines() if "~~~" in l], ["n_logic ~~~ n_core", "n_logic ~~~ n_radio"])
+        for c in m["components"]:
+            c.pop("hardware", None)  # no subsystem drives a bus: no invisible links
+        self.assertNotIn("~~~", gd.render(m, "x"))
 
     def test_layers_stacked_in_manifest_order(self):
         layering = self.text.split("## Layering")[1]

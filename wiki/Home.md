@@ -8,7 +8,7 @@ AI agents that write ESP-IDF firmware tend to ignore architecture. The plugin ma
 
 ## 2. Current state
 
-The plugin installs in Claude Code and has no skills or hooks yet. It ships the manifest schema and its validator (§4) the checker that compares the code with the manifest (§5) and the diagram generator (§6). The skills, hooks and decision records are planned in the epic's sub-issues.
+The plugin installs in Claude Code and has no skills or hooks yet. It ships the manifest schema and its validator (§4), the checker that compares the code with the manifest (§5), the diagram generator (§6) and the records lint (§7). The skills and hooks are planned in the epic's sub-issues.
 
 ## 3. Rule sources
 
@@ -16,15 +16,15 @@ Rules are public, in our own words, each with an ID and a rationale. Where a rul
 
 ## 4. The manifest: `arch/architecture.yaml`
 
-One file per project describes the architecture. The checker and the diagram generator read only this file. Schema: `plugin/schema/architecture.schema.json` (editors with the YAML language server pick it up from a `# yaml-language-server: $schema=...` first line). Example: `examples/gateway/architecture.yaml`, the rmx-mower-gateway target layers.
+One file per project describes the architecture. The checker and the diagram generator read only this file. Schema: `plugin/schema/architecture.schema.json` (editors with the YAML language server pick it up from a `# yaml-language-server: $schema=...` first line). Example: `examples/gateway/architecture.yaml`, transcribed from rmx-mower-gateway; not a reviewed design.
 
 | Section | Holds | Feeds |
 |---|---|---|
 | `system` | Name and purpose | Every diagram's title |
 | `context` | `actors` (person, system, device) and `flows` between two parties: `system` (the device) and an actor, or two actors; a flow's `data` is an optional short label | Context diagram |
 | `hardware` | `processor` (the chip or module, e.g. ESP32-WROVER-E; optional); `description` (what the processor or module has inside, e.g. integrated flash and PSRAM; optional, shown as text above the block diagram); `buses` inside the chip, each with an optional `peripheral` (e.g. UART2) that labels it; `devices`, each on one `bus` or a list of them (a modem on UART and GPIO), with an optional `name` shown in diagram boxes (the id when absent) and optional `holds` (what it stores, a software decision, to be shown at level 3) | Block diagram |
-| `subsystems` | Mandatory, at least one (a small project may have a single one): the few bundles the components fall into, each an `id` and `description` | Block level 2 |
-| `layers` | Ordered from the top (application) to the bottom (platform) | Layering diagram |
+| `subsystems` | Mandatory, at least one (a small project may have a single one): the few bundles the components fall into, each an `id`, `description` and `decisions` (`DEC-nnn`) | Block level 2 |
+| `layers` | Ordered from the top (application) to the bottom (platform), each with `decisions` (`DEC-nnn`) | Layering diagram |
 | `components` | `subsystem` (mandatory, a declared subsystem), layer, `path` (the ESP-IDF component directory), `sources` (globs of the files it owns; default all sources under `path`), `depends_on` (other components), `idf_requires` (ESP-IDF or managed components), `hardware`, `interfaces` (public headers), `requirements` (`REQ-nnn`), `decisions` (`DEC-nnn`) | `depends_on` is the organigram |
 | `allow_sideways` | Whether a component may depend on one in its own layer (default true) | Validator |
 | `tasks`, `isrs` | Owner component, priority, stack, source | Task table under the organigram, the checker |
@@ -103,3 +103,29 @@ Colour key, the same in every diagram: **amber** = shared (a bus with several de
 A manifest with schema errors is refused. Rule errors (an upward edge, a cycle) only warn, so a design under discussion can still be drawn; the checker is what blocks.
 
 Examples, rendered on GitHub: `examples/gateway/diagrams.md` (target) and `examples/gateway/as-is.md` (code at rmx-lt/rmx-mower-gateway `725a2ce`: 69 edges, 47 not in the manifest, 6 upward).
+
+## 7. Requirements and decision records
+
+Every subsystem, layer and component in the manifest exists because of a decision, and every decision serves a requirement. Both live next to the manifest:
+
+| File | Format |
+|---|---|
+| `arch/requirements.md` | One `## REQ-nnn Title` heading per requirement, followed by what is required and where it came from (an issue, a wiki page, the owner) |
+| `arch/decisions/DEC-nnn-slug.md` | One file per decision. First heading `# DEC-nnn Title`, then the sections `## Context` (the problem), `## Decision` (what was chosen), `## Alternatives` (what else was considered and why not) and `## Requirements` (the `REQ-nnn` IDs it serves) |
+
+The manifest cites them: `decisions` on each subsystem, layer and component, and optional `requirements` on a component.
+
+Check:
+
+```
+python plugin/tools/check_records.py --project <project root>
+```
+
+Exit 0 when the records back the manifest, 1 with one error per line. It refuses an invalid manifest (§4) and reports:
+
+- a subsystem, layer or component that cites no decision;
+- a cited `DEC-nnn` with no record, or a `REQ-nnn` not in `requirements.md`;
+- a record that misses a section, cites no requirement in its Requirements section, or cites one that does not exist;
+- a record whose file name is not `DEC-nnn-slug.md` or whose first heading does not match it, and an ID used twice.
+
+Records will also cite rule IDs once the rule catalog exists ([#4](https://github.com/jRmx0/esp-architecture/issues/4)). The gateway example has no records: it is not a reviewed design, and the pilot (rmx-lt/rmx-mower-gateway#120) writes the first real ones.

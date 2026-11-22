@@ -110,6 +110,8 @@ Every subsystem, layer and component in the manifest exists because of a decisio
 
 **Requirements are the source of truth.** Code, documentation, issues and decision records reference requirement IDs; a requirement never points at them. A new feature starts with its requirement, and its issue, code and documentation cite the ID. A requirement may name an outside specification it relies on (an interface contract, a standard) the way it would name a standard, but not the project's own code or pages.
 
+**Requirements change with the project.** They may be reworded, merged, split, moved, renumbered or removed as development teaches more. Before adding a requirement, review the existing ones: update one that already covers the need instead of adding a near-duplicate. When an ID changes or disappears, update everything that cites it in the same change; `check_records.py` reports records and manifest entries that cite an ID no longer in `requirements.md`.
+
 
 | File | Format |
 |---|---|

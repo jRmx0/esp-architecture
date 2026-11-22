@@ -71,7 +71,7 @@ flowchart LR
 
 ## Organigram
 
-Who calls whom, from the top down (`depends_on`). Red boxes: used by more than one component (gw_link, mqtt_link, usage, rmx_codec, settings); a shared resource needs care against contention. Red arrows: 1 upward, which the layers forbid.
+Who calls whom, from the top down (`depends_on`). Amber boxes: used by more than one component (gw_link, mqtt_link, usage, rmx_codec, settings); check contention (one caller at a time, locking, the slowest caller sets the pace). Red arrows: 1 upward, which the layers forbid.
 
 ```mermaid
 flowchart TD
@@ -123,7 +123,7 @@ flowchart TD
   n_cell --> n_board
   n_cell --> n_usage
   n_cell --> n_gw_link
-  classDef shared stroke:#d33,stroke-width:2px
+  classDef shared stroke:#d98e04,stroke-width:2px
   class n_gw_link,n_mqtt_link,n_usage,n_rmx_codec,n_settings shared
   linkStyle 27 stroke:#d33,stroke-width:2px
 ```

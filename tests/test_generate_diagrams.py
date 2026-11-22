@@ -62,7 +62,7 @@ class Render(unittest.TestCase):
         self.assertNotIn("n_spi2", block.split("### Level 1b")[0])  # hardware: buses are lines, not boxes
         self.assertNotIn("n_ui", block)
         self.assertNotIn("n_flash", block)
-        self.assertNotIn("Red:", self.text)
+        self.assertNotIn("Amber:", self.text)
         org = self.text.split("## Organigram")[1].split("## Layering")[0]
         self.assertIn("| `ui_task` | ui | 3 | 4096 |", org)
 
@@ -82,8 +82,8 @@ class Render(unittest.TestCase):
         # devices sharing a bus stay on one side (left); the other group goes right
         edges = [l.strip() for l in block.splitlines() if "---|" in l]
         self.assertEqual(edges, ['n_nor ---|"SPI"| cpu_box', 'n_lcd ---|"SPI"| cpu_box', 'cpu_box ---|"I2C"| n_imu'])
-        self.assertIn("linkStyle 0,1 stroke:#d33", block)
-        self.assertIn("Red: a bus with more than one device (spi2)", text)
+        self.assertIn("linkStyle 0,1 stroke:#d98e04", block)
+        self.assertIn("Amber: a bus shared by several devices (spi2); check contention", text)
 
     def test_block_hardware_description_in_text_not_in_diagram(self):
         m = copy.deepcopy(FULL)
@@ -131,7 +131,8 @@ class Render(unittest.TestCase):
         edges = [l.strip() for l in soft.splitlines() if " --- " in l]
         self.assertEqual(edges, ["n_nor --- n_spi2", "n_lcd --- n_spi2", "n_lcd --- n_pins", "n_pins --- n_btn"])
         self.assertIn("class n_spi2 shared", soft)
-        self.assertIn("linkStyle 0,1 stroke:#d33", soft)
+        self.assertIn("linkStyle 0,1 stroke:#d98e04", soft)
+        self.assertIn("classDef shared stroke:#d98e04", soft)
 
     def test_block_shared_only_where_devices_share_lines(self):
         m = copy.deepcopy(FULL)
@@ -181,13 +182,15 @@ class Render(unittest.TestCase):
     def test_heading_level(self):
         self.assertIn("\n### Context\n", gd.render(copy.deepcopy(FULL), "x", level=3))
 
-    def test_shared_and_upward_marked_red(self):
+    def test_shared_amber_and_upward_red(self):
         m = copy.deepcopy(FULL)
         m["components"].append({"id": "log", "layer": "app", "description": "log", "depends_on": ["flash"]})
         m["components"][1]["depends_on"] = ["ui"]  # upward: drivers -> app
         org = gd.render(m, "x").split("## Organigram")[1]
         self.assertIn("class n_flash shared", org)
-        self.assertIn("linkStyle 1 stroke:#d33", org)  # edges: ui->flash (0), flash->ui (1), log->flash (2)
+        self.assertIn("classDef shared stroke:#d98e04", org)  # shared: check contention
+        self.assertIn("Amber boxes: used by more than one component (flash); check contention", org)
+        self.assertIn("linkStyle 1 stroke:#d33", org)  # breaks a rule  # edges: ui->flash (0), flash->ui (1), log->flash (2)
         self.assertIn("1 upward", org)
 
 

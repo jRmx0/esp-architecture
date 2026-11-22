@@ -21,7 +21,8 @@ from validate_manifest import schema_errors, validate  # noqa: E402
 BEGIN = "<!-- esp-architecture:diagrams begin: generated from {src} by generate_diagrams.py, do not edit -->"
 END = "<!-- esp-architecture:diagrams end -->"
 SECTION = re.compile(r"<!-- esp-architecture:diagrams begin.*?<!-- esp-architecture:diagrams end -->", re.S)
-RED = "stroke:#d33,stroke-width:2px"
+RED = "stroke:#d33,stroke-width:2px"  # breaks a rule
+AMBER = "stroke:#d98e04,stroke-width:2px"  # shared: check contention
 PER_LINE = 6  # components per line in the layering grid
 
 
@@ -89,8 +90,8 @@ def block(m):
     boxes = [f"  {node(d['id'])}[{label(d.get('name', d['id']))}]" for d in devices]
     style = ["  classDef device fill:none,stroke:#888",
              f"  class {','.join(node(d['id']) for d in devices)} device"] if devices else []
-    red = ",".join(str(n) for n, (_, _, b) in enumerate(links) if b in shared)
-    red = [f"  linkStyle {red} {RED}"] if red else []
+    amber = ",".join(str(n) for n, (_, _, b) in enumerate(links) if b in shared)
+    amber = [f"  linkStyle {amber} {AMBER}"] if amber else []
 
     # cpu_box has no n_ prefix, so no device or bus id can collide with it
     hard = ["flowchart LR", f"  cpu_box[{title}]", *boxes]
@@ -101,8 +102,8 @@ def block(m):
     soft += [f"  {node(d['id'])} --- {node(b)}" if side == 0 else f"  {node(b)} --- {node(d['id'])}"
              for side, d, b in links]
     if shared:
-        soft += [f"  classDef shared {RED}", f"  class {','.join(node(b) for b in shared)} shared"]
-    return fence(hard + style + red), fence(soft + style + red), shared
+        soft += [f"  classDef shared {AMBER}", f"  class {','.join(node(b) for b in shared)} shared"]
+    return fence(hard + style + amber), fence(soft + style + amber), shared
 
 
 def tasks(m):
@@ -128,7 +129,7 @@ def organigram(m):
             n += 1
     shared = [d for d, u in users.items() if len(u) > 1]
     if shared:
-        out.append(f"  classDef shared {RED}")
+        out.append(f"  classDef shared {AMBER}")
         out.append(f"  class {','.join(node(d) for d in shared)} shared")
     if upward:
         out.append(f"  linkStyle {','.join(upward)} {RED}")
@@ -160,13 +161,13 @@ def layering(m):
 def render(m, src, level=2):
     h = "#" * level
     org, shared, upward = organigram(m)
-    note = (f" Red boxes: used by more than one component ({', '.join(shared)}); a shared resource needs care "
-            "against contention." if shared else "")
+    note = (f" Amber boxes: used by more than one component ({', '.join(shared)}); "
+            "check contention (one caller at a time, locking, the slowest caller sets the pace)." if shared else "")
     note += f" Red arrows: {upward} upward, which the layers forbid." if upward else ""
     hard, soft, shared_buses = block(m)
     hw_text = m.get("hardware", {}).get("description")
-    bnote = (f" Red: a bus with more than one device ({', '.join(shared_buses)}); they share its lines, and a shared "
-             "resource needs care against contention." if shared_buses else "")
+    bnote = (f" Amber: a bus shared by several devices ({', '.join(shared_buses)}); check contention "
+             "(one transfer at a time, locking, the slowest device sets the speed)." if shared_buses else "")
     return "\n".join([
         BEGIN.format(src=src), "",
         f"{h} Context", "", "The device and the world around it.", "", context(m), "",

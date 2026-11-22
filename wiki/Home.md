@@ -110,7 +110,7 @@ Every subsystem, layer and component in the manifest exists because of a decisio
 
 | File | Format |
 |---|---|
-| `arch/requirements.md` | One `## REQ-nnn Title` heading per requirement, followed by what is required and where it came from (an issue, a wiki page, the owner) |
+| `arch/requirements.md` | Tables with the columns `ID \| Title \| Requirement \| Source`, one row per requirement: its `REQ-nnn` ID (the first cell), a short title, what is required (the outcome, not how it is built) and where it came from (an issue, a wiki page, the owner). `##` headings may group the tables by area |
 | `arch/decisions/DEC-nnn-slug.md` | One file per decision. First heading `# DEC-nnn Title`, then the sections `## Context` (the problem), `## Decision` (what was chosen), `## Alternatives` (what else was considered and why not) and `## Requirements` (the `REQ-nnn` IDs it serves), and optionally `## Rules` (the `RULE-nnn` IDs it applies, §8) |
 
 The manifest cites them: `decisions` on each subsystem, layer and component, and optional `requirements` on a component.

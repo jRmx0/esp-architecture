@@ -21,7 +21,13 @@ MANIFEST = {
                     "decisions": ["DEC-002"], "requirements": ["REQ-001"]}],
 }
 
-REQS = "# Requirements\n\n## REQ-001 Show the state\nThe device shows its state.\n\n## REQ-002 Boot fast\nUnder 2 s.\n"
+REQS = ("# Requirements\n\n## Display\n\n| ID | Title | Requirement | Source |\n|---|---|---|---|\n"
+        "| REQ-001 | Show the state | The device shows its state. | owner |\n"
+        "| REQ-002 | Boot fast | Under 2 s; not REQ-009. | owner |\n")
+
+
+def req_row(req, title="Extra"):
+    return f"| {req} | {title} | Text. | owner |\n"
 
 
 def record(dec, reqs="REQ-001"):
@@ -103,9 +109,14 @@ class Records(unittest.TestCase):
                     record("DEC-002", "none").replace("Why.", "Why: REQ-001."))
             self.assertEqual(p.errors(), ["DEC-002-ui-component.md: cites no requirement"])
 
+    def test_only_table_rows_define_requirements(self):
+        with Project() as p:
+            p.write("arch/requirements.md", REQS + "\n## REQ-003 Old heading form\nSee REQ-004.\n")
+            self.assertEqual(cr.requirement_ids(p.root / "arch/requirements.md"), ["REQ-001", "REQ-002"])
+
     def test_requirement_served_by_no_decision(self):
         with Project() as p:
-            p.write("arch/requirements.md", REQS + "\n## REQ-003 Log faults\nKeep the last ten.\n")
+            p.write("arch/requirements.md", REQS + req_row("REQ-003", "Log faults"))
             self.assertEqual(p.errors(), ["requirements.md: REQ-003 is served by no decision"])
 
     def test_rules_section_cites_catalog_rules(self):
@@ -128,7 +139,7 @@ class Records(unittest.TestCase):
 
     def test_duplicate_ids(self):
         with Project() as p:
-            p.write("arch/requirements.md", REQS + "\n## REQ-001 Again\n")
+            p.write("arch/requirements.md", REQS + req_row("REQ-001", "Again"))
             p.write("arch/decisions/DEC-001-again.md", record("DEC-001"))
             self.assertEqual(p.errors(), ["requirements.md: REQ-001 used twice", "DEC-001-one-layer.md: DEC-001 used twice"])
 

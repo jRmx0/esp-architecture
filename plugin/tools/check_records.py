@@ -6,7 +6,8 @@ Reads <project>/arch/architecture.yaml, arch/requirements.md and arch/decisions/
 Exit 0 when every component, layer and subsystem cites a decision, every cited ID exists,
 and every decision cites a requirement; 1 with one error per line otherwise; 2 on bad usage.
 
-  requirements.md   one "## REQ-nnn Title" heading per requirement
+  requirements.md   tables "| ID | Title | Requirement | Source |", one row per requirement,
+                    its first cell the REQ-nnn ID
   DEC-nnn-slug.md   "# DEC-nnn Title", then sections Context, Decision, Alternatives, Requirements,
                     and optionally Rules (RULE-nnn IDs from the plugin's rules/rules.yaml)
 """
@@ -31,10 +32,10 @@ def rule_ids():
 
 
 def requirement_ids(path):
-    """[REQ ids] in heading order, duplicates kept so the caller can report them."""
+    """[REQ ids] of table rows whose first cell is the ID, in order, duplicates kept for the caller."""
     if not path.is_file():
         return []
-    return re.findall(r"^##[ \t]+(REQ-[0-9]{3})\b", path.read_text(encoding="utf-8"), re.M)
+    return re.findall(r"^[ \t]*\|[ \t]*(REQ-[0-9]{3})[ \t]*\|", path.read_text(encoding="utf-8"), re.M)
 
 
 def decision_records(folder):

@@ -7,7 +7,7 @@ Exit 0 when every component, layer and subsystem cites a decision, every cited I
 and every decision cites a requirement; 1 with one error per line otherwise; 2 on bad usage.
 
   requirements.md   tables "| ID | Title | Requirement | Source |", one row per requirement,
-                    its first cell the REQ-nnn ID
+                    its first cell the ID: F-REQ-nnn (functional) or NF-REQ-nnn (non-functional)
   DEC-nnn-slug.md   "# DEC-nnn Title", then sections Context, Decision, Alternatives, Requirements,
                     and optionally Rules (RULE-nnn IDs from the plugin's rules/rules.yaml)
 """
@@ -21,7 +21,8 @@ import yaml
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from validate_manifest import validate  # noqa: E402
 
-REQ = re.compile(r"\bREQ-[0-9]{3}\b")
+REQ_ID = r"(?:NF|F)-REQ-[0-9]{3}"
+REQ = re.compile(rf"\b{REQ_ID}\b")
 RULE = re.compile(r"\bRULE-[0-9]{3}\b")
 SECTIONS = ("Context", "Decision", "Alternatives", "Requirements")
 RULES = pathlib.Path(__file__).resolve().parent.parent / "rules" / "rules.yaml"
@@ -35,7 +36,7 @@ def requirement_ids(path):
     """[REQ ids] of table rows whose first cell is the ID, in order, duplicates kept for the caller."""
     if not path.is_file():
         return []
-    return re.findall(r"^[ \t]*\|[ \t]*(REQ-[0-9]{3})[ \t]*\|", path.read_text(encoding="utf-8"), re.M)
+    return re.findall(rf"^[ \t]*\|[ \t]*({REQ_ID})[ \t]*\|", path.read_text(encoding="utf-8"), re.M)
 
 
 def decision_records(folder):

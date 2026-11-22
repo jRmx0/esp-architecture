@@ -25,7 +25,7 @@ One file per project describes the architecture. The checker and the diagram gen
 | `hardware` | `processor` (the chip or module, e.g. ESP32-WROVER-E; optional); `description` (what the processor or module has inside, e.g. integrated flash and PSRAM; optional, shown as text above the block diagram); `buses` inside the chip, each with an optional `peripheral` (e.g. UART2) that labels it; `devices`, each on one `bus` or a list of them (a modem on UART and GPIO), with an optional `name` shown in diagram boxes (the id when absent) and optional `holds` (what it stores, a software decision, to be shown at level 3) | Block diagram |
 | `subsystems` | Mandatory, at least one (a small project may have a single one): the few bundles the components fall into, each an `id`, `description` and `decisions` (`DEC-nnn`) | Block level 2 |
 | `layers` | Ordered from the top (application) to the bottom (platform), each with `decisions` (`DEC-nnn`) | Layering diagram |
-| `components` | `subsystem` (mandatory, a declared subsystem), layer, `path` (the ESP-IDF component directory), `sources` (globs of the files it owns; default all sources under `path`), `depends_on` (other components), `idf_requires` (ESP-IDF or managed components), `hardware`, `interfaces` (public headers), `requirements` (`REQ-nnn`), `decisions` (`DEC-nnn`) | `depends_on` is the organigram |
+| `components` | `subsystem` (mandatory, a declared subsystem), layer, `path` (the ESP-IDF component directory), `sources` (globs of the files it owns; default all sources under `path`), `depends_on` (other components), `idf_requires` (ESP-IDF or managed components), `hardware`, `interfaces` (public headers), `requirements` (`F-REQ-nnn` or `NF-REQ-nnn`), `decisions` (`DEC-nnn`) | `depends_on` is the organigram |
 | `allow_sideways` | Whether a component may depend on one in its own layer (default true) | Validator |
 | `tasks`, `isrs` | Owner component, priority, stack, source | Task table under the organigram, the checker |
 
@@ -110,7 +110,7 @@ Every subsystem, layer and component in the manifest exists because of a decisio
 
 | File | Format |
 |---|---|
-| `arch/requirements.md` | Tables with the columns `ID \| Title \| Requirement \| Source`, one row per requirement: its `REQ-nnn` ID (the first cell), a short title, what is required (the outcome, not how it is built) and where it came from (an issue, a wiki page, the owner). `##` headings may group the tables by area |
+| `arch/requirements.md` | Tables with the columns `ID \| Title \| Requirement \| Source`, one row per requirement: its ID in the first cell: `F-REQ-nnn` for a functional requirement (what the system does) or `NF-REQ-nnn` for a non-functional one (how well it does it, and the limits it fits in), a short title, what is required (the outcome, not how it is built) and where it came from (an issue, a wiki page, the owner). `##` headings may group the tables by area |
 | `arch/decisions/DEC-nnn-slug.md` | One file per decision. First heading `# DEC-nnn Title`, then the sections `## Context` (the problem), `## Decision` (what was chosen), `## Alternatives` (what else was considered and why not) and `## Requirements` (the `REQ-nnn` IDs it serves), and optionally `## Rules` (the `RULE-nnn` IDs it applies, §8) |
 
 The manifest cites them: `decisions` on each subsystem, layer and component, and optional `requirements` on a component.
@@ -124,7 +124,7 @@ python plugin/tools/check_records.py --project <project root>
 Exit 0 when the records back the manifest, 1 with one error per line. It refuses an invalid manifest (§4) and reports:
 
 - a subsystem, layer or component that cites no decision;
-- a cited `DEC-nnn` with no record, or a `REQ-nnn` not in `requirements.md`;
+- a cited `DEC-nnn` with no record, or a requirement ID not in `requirements.md`;
 - a record that misses a section, cites no requirement in its Requirements section, or cites one that does not exist;
 - a requirement that no record's Requirements section cites, so nothing in the design serves it;
 - a rule ID in a Rules section that is not in the catalog;

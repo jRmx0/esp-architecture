@@ -714,3 +714,67 @@ block-beta
   class subs,row_c,bus_c,row_a,row_s,bus_s,row_l,devs group
 ```
 
+## Level 2, subsystems: v15
+
+v14a works: platform stretches beside the subsystem column, cellular beside its two buses, server_link beside UART0 and a gap. Two side effects: Mermaid gives every child of a group the same size, so the title (a child of the processor block) became as tall as the whole body, and the devices (in a block the size of the processor) became huge. v15: the title is the top row of the subsystem column, so it is one row tall; the devices sit in the middle of three columns, each row a device or a gap, so they are row-sized; padding 0 (default padding, v14b, looked worse).
+
+```mermaid
+%%{init: {"block": {"padding": 0}}}%%
+block-beta
+  columns 2
+  block:cpu
+    columns 2
+    platform["<b>platform</b>"]
+    block:subs
+      columns 1
+      title["<b>ESP32-WROVER-E</b>"]
+      block:row_c
+        columns 2
+        cellular["<b>cellular</b>"]
+        block:bus_c
+          columns 1
+          uart1["<b>UART1</b>"] space gpio["<b>GPIO</b>"]
+        end
+      end
+      block:row_a
+        columns 2
+        app["<b>app</b>"] space
+      end
+      block:row_s
+        columns 2
+        server_link["<b>server_link</b>"]
+        block:bus_s
+          columns 1
+          uart0["<b>UART0</b>"] space
+        end
+      end
+      block:row_l
+        columns 2
+        autopilot_link["<b>autopilot_link</b>"] uart2["<b>UART2</b>"]
+      end
+    end
+  end
+  block:devs
+    columns 3
+    space space space
+    space sim7600["SIM7600 modem"] space
+    space space space
+    space user_led["user LED"] space
+    space space space
+    space ch9102["USB-UART bridge"] space
+    space space space
+    space autopilot_board["autopilot board"] space
+  end
+  uart1 --- sim7600
+  gpio --- sim7600
+  gpio --- user_led
+  uart0 --- ch9102
+  uart2 --- autopilot_board
+  classDef title fill:none,stroke:none
+  classDef box fill:none,stroke:#888
+  classDef group fill:none,stroke:none
+  class title title
+  class sim7600,user_led,ch9102,autopilot_board box
+  class subs,row_c,bus_c,row_a,row_s,bus_s,row_l,devs group
+```
+

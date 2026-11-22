@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=../../plugin/schema/architecture.schema.json
+#
+# rmx-mower-gateway's target architecture, transcribed from its wiki page
+# Mower-Gateway-Architecture §3 (layers and target graph), §1.2 (tasks) and the
+# repo's CLAUDE.md (hardware), at commit 725a2ce. Not invented: where §3 is
+# silent (e.g. dependencies of monitor, gw_tasks), the edge is left out.
+# The validator reports one real conflict in it: cell (L1) depends on usage (L3).
+version: 1
+system:
+  name: rmx-mower-gateway
+  description: ESP32 + SIM7600G-H board that links the mower's autopilot to rmx-server over LTE (MQTT over TLS) and relays NTRIP corrections.
+
+context:
+  actors:
+    - { id: rmx_server, kind: system, description: Broker and server app at mqtt.rmx.lt:8883 }
+    - { id: ntrip_caster, kind: system, description: NTRIP caster for RTK corrections }
+    - { id: autopilot, kind: device, description: Mower autopilot board on the board link }
+    - { id: installer, kind: person, description: Provisions the device certificate over the serial console }
+  flows:
+    - { from: system, to: rmx_server, data: "state, telemetry, metrics, command acks" }
+    - { from: rmx_server, to: system, data: "commands, firmware chunks" }
+    - { from: system, to: ntrip_caster, data: GGA position }
+    - { from: ntrip_caster, to: system, data: RTCM corrections }
+    - { from: autopilot, to: system, data: "frames to relay, GGA" }
+    - { from: system, to: autopilot, data: "corrections, relayed messages, heartbeat" }
+    - { from: installer, to: system, data: device certificate chain }
+
+hardware:
+  buses:
+    - { id: uart_modem, kind: uart, description: "Modem UART, TX 27 RX 26, no flow control" }
+    - { id: uart2_board, kind: uart, description: UART2 with RTS/CTS to the autopilot }
+    - { id: uart0_console, kind: uart, description: UART0 provisioning console }
+    - { id: gpio_board, kind: gpio, description: "PWRKEY 4, FLIGHT 25, DTR 32, status LED" }
+  devices:
+    - { id: sim7600, bus: uart_modem, description: SIM7600G-H LTE modem }
+
+layers:
+  - { id: l4_app, description: Init order and the supervisor }
+  - { id: l3_services, description: "MQTT, board link, NTRIP, commands, OTA, state, metrics" }
+  - { id: l2_codecs, description: "Pure C, no ESP-IDF or FreeRTOS includes, host-tested" }
+  - { id: l1_links, description: "Modem and PPP, board UART" }
+  - { id: l0_platform, description: "Pins, NVS, task table, link state" }
+
+components:
+  - { id: app_main, layer: l4_app, path: main, description: Init order only, depends_on: [supervisor] }
+  - id: supervisor
+    layer: l4_app
+    description: Link state machine, recovery ladder, OTA confirm and report
+    depends_on: [gw_link, mqtt_link, cell, ota, gwstate, metrics]
+  - { id: mqtt_link, layer: l3_services, description: esp-mqtt client and route table, depends_on: [devcert, usage, gw_link] }
+  - { id: board_link, layer: l3_services, description: "Board link to the autopilot (planned, rmx-mower-gateway#62)", depends_on: [bl_uart, mqtt_link, rmx_codec, gw_link] }
+  - { id: ntrip, layer: l3_services, description: NTRIP client, depends_on: [board_link, settings, gw_link, rmx_codec] }
+  - { id: remote_cmd, layer: l3_services, description: "Command queue, registry and acks", depends_on: [mqtt_link, rmx_codec] }
+  - { id: ota, layer: l3_services, description: Firmware download over MQTT, depends_on: [mqtt_link, remote_cmd, rmx_codec] }
+  - { id: gwstate, layer: l3_services, description: "Boot counter, clock, gateway/state fields", depends_on: [settings] }
+  - { id: metrics, layer: l3_services, description: Metric catalogue and telemetry, depends_on: [mqtt_link] }
+  - { id: monitor, layer: l3_services, description: Monitor sessions }
+  - { id: usage, layer: l3_services, description: Byte counters per link and topic }
+  - { id: devcert, layer: l3_services, description: "Device key, CSR, provisioning console", depends_on: [settings], hardware: [uart0_console] }
+  - { id: rmx_codec, layer: l2_codecs, path: components/rmx_codec, description: "COBS, CRC-16, frames, firmware chunks, commands, NTRIP codec, recovery" }
+  - { id: cell, layer: l1_links, description: "esp_modem DCE, PPP, AT sessions, redial", depends_on: [board, usage, gw_link], hardware: [sim7600] }
+  - { id: bl_uart, layer: l1_links, description: Board link UART driver (planned), hardware: [uart2_board] }
+  - { id: board, layer: l0_platform, description: "Pins, PWRKEY pulse, status LED", hardware: [gpio_board] }
+  - { id: settings, layer: l0_platform, description: The only NVS opener }
+  - { id: gw_tasks, layer: l0_platform, description: Task table and liveness counters }
+  - { id: gw_link, layer: l0_platform, description: Link-state bits and GW_EVENT edges }
+
+tasks:
+  - { id: ntrip, component: ntrip, priority: 6, stack: 4096 }
+  - { id: cell_wd, component: cell, priority: 5, stack: 4096 }
+  - { id: remote_cmd, component: remote_cmd, priority: 4, stack: 6144 }
+  - { id: supervisor, component: supervisor, priority: 3, stack: 6144 }
+  - { id: gw_tick, component: metrics, priority: 3, stack: 6144 }
+  - { id: ota, component: ota, priority: 3, stack: 12288 }
+  - { id: devcert, component: devcert, priority: 3, stack: 6144 }
+  - { id: gw_signal, component: metrics, priority: 2, stack: 4096 }

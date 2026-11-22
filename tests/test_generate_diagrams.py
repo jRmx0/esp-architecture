@@ -46,12 +46,20 @@ class Render(unittest.TestCase):
 
     def test_block_puts_devices_outside_the_chip(self):
         block = self.text.split("## Block")[1].split("## Organigram")[0]
-        inside = block.split("subgraph chip")[1].split("\n  end")[0]
-        self.assertIn("n_spi2", inside)
+        self.assertIn("block-beta", block)
+        inside = block.split("block:chip")[1].split("\n  end")[0]
+        self.assertIn("n_spi2[/", inside)
+        self.assertIn("n_ui[", inside)
         self.assertNotIn("n_nor", inside)
+        self.assertIn("n_nor{{", block.split("block:outside")[1])
         self.assertIn("n_spi2 --- n_nor", block)
-        self.assertIn("n_flash --- n_spi2", block)
+        self.assertIn("n_flash --> n_spi2", block)
         self.assertIn("| `ui_task` | ui | 3 | 4096 |", block)
+
+    def test_block_rows_follow_layers_then_buses(self):
+        inside = self.text.split("block:chip")[1].split("\n  end")[0]
+        self.assertLess(inside.index("n_ui["), inside.index("n_flash["))
+        self.assertLess(inside.index("n_flash["), inside.index("n_spi2[/"))
 
     def test_layers_stacked_in_manifest_order(self):
         layering = self.text.split("## Layering")[1]

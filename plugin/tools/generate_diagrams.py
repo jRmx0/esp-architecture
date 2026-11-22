@@ -50,28 +50,43 @@ def context(m):
     return fence(out)
 
 
+def grid_rows(cells, width, indent="    "):
+    """Lay cells out left to right, width per line, padding the last line with space blocks."""
+    out = []
+    for i in range(0, len(cells), width):
+        chunk = cells[i:i + width]
+        out += [indent + c for c in chunk] + [indent + "space"] * (width - len(chunk))
+    return out
+
+
 def block(m):
-    # TB everywhere: unlinked nodes of one rank sit side by side, so each group reads as a row
+    # block-beta, not a flowchart: the author places every block, so the chip reads like the
+    # book's figure. One row per layer, the buses in the bottom row of the chip, devices outside.
     hw = m.get("hardware", {})
-    out = ["flowchart TB", f"  subgraph chip[{label(m['system']['name'])}]"]
-    rows = []
-    for layer in m["layers"]:
-        members = [c for c in m["components"] if c["layer"] == layer["id"]]
-        if members:
-            rows.append(f"B_{layer['id']}")
-            out.append(f"    subgraph B_{layer['id']}[{label(layer['id'])}]")
-            out += [f"      {node(c['id'])}[{label(c['id'])}]" for c in members]
-            out.append("    end")
-    if hw.get("buses"):
-        rows.append("B_buses")
-        out.append(f"    subgraph B_buses[{label('peripherals')}]")
-        out += [f"      {node(b['id'])}[/{label(b['id'], b['kind'])}/]" for b in hw["buses"]]
-        out.append("    end")
-    out += [f"    {a} ~~~ {b}" for a, b in zip(rows, rows[1:])]
+    buses, devices = hw.get("buses", []), hw.get("devices", [])
+    rows = [[c["id"] for c in m["components"] if c["layer"] == l["id"]] for l in m["layers"]]
+    rows = [r for r in rows if r] + ([[b["id"] for b in buses]] if buses else [])
+    width = max(1, min(PER_LINE, max([len(r) for r in rows] + [len(devices)])))
+    bus_ids = {b["id"] for b in buses}
+
+    def cell(i):
+        if i in bus_ids:
+            kind = next(b["kind"] for b in buses if b["id"] == i)
+            return f"{node(i)}[/{label(i, kind)}/]"
+        return f"{node(i)}[{label(i)}]"
+
+    out = ["block-beta", "  columns 1", "  block:chip", f"    columns {width}",
+           f"    chip_title[{label('<b>' + m['system']['name'] + '</b>')}]:{width}"]
+    for r in rows:
+        out += grid_rows([cell(i) for i in r], width)
     out.append("  end")
-    out += [f"  {node(d['id'])}{{{{{label(d['id'], d['description'])}}}}}" for d in hw.get("devices", [])]
-    out += [f"  {node(d['bus'])} --- {node(d['id'])}" for d in hw.get("devices", [])]
-    out += [f"  {node(c['id'])} --- {node(h)}" for c in m["components"] for h in c.get("hardware", [])]
+    if devices:
+        out += ["  space", "  block:outside", f"    columns {width}"]
+        out += grid_rows([f"{node(d['id'])}{{{{{label(d['id'], d['description'])}}}}}" for d in devices], width)
+        out.append("  end")
+    out += [f"  {node(c['id'])} --> {node(h)}" for c in m["components"] for h in c.get("hardware", [])]
+    out += [f"  {node(d['bus'])} --- {node(d['id'])}" for d in devices]
+    out += ["  classDef title fill:none,stroke:none", "  class chip_title title"]
     return fence(out)
 
 

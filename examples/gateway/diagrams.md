@@ -25,55 +25,71 @@ flowchart LR
 Inside the chip: components and the buses they drive; outside: devices on those buses.
 
 ```mermaid
-flowchart TB
-  subgraph chip["rmx-mower-gateway"]
-    subgraph B_l4_app["l4_app"]
-      n_app_main["app_main"]
-      n_supervisor["supervisor"]
-    end
-    subgraph B_l3_services["l3_services"]
-      n_mqtt_link["mqtt_link"]
-      n_board_link["board_link"]
-      n_ntrip["ntrip"]
-      n_remote_cmd["remote_cmd"]
-      n_ota["ota"]
-      n_gwstate["gwstate"]
-      n_metrics["metrics"]
-      n_monitor["monitor"]
-      n_usage["usage"]
-      n_devcert["devcert"]
-    end
-    subgraph B_l2_codecs["l2_codecs"]
-      n_rmx_codec["rmx_codec"]
-    end
-    subgraph B_l1_links["l1_links"]
-      n_cell["cell"]
-      n_bl_uart["bl_uart"]
-    end
-    subgraph B_l0_platform["l0_platform"]
-      n_board["board"]
-      n_settings["settings"]
-      n_gw_tasks["gw_tasks"]
-      n_gw_link["gw_link"]
-    end
-    subgraph B_buses["peripherals"]
-      n_uart_modem[/"uart_modem<br/>uart"/]
-      n_uart2_board[/"uart2_board<br/>uart"/]
-      n_uart0_console[/"uart0_console<br/>uart"/]
-      n_gpio_board[/"gpio_board<br/>gpio"/]
-    end
-    B_l4_app ~~~ B_l3_services
-    B_l3_services ~~~ B_l2_codecs
-    B_l2_codecs ~~~ B_l1_links
-    B_l1_links ~~~ B_l0_platform
-    B_l0_platform ~~~ B_buses
+block-beta
+  columns 1
+  block:chip
+    columns 6
+    chip_title["<b>rmx-mower-gateway</b>"]:6
+    n_app_main["app_main"]
+    n_supervisor["supervisor"]
+    space
+    space
+    space
+    space
+    n_mqtt_link["mqtt_link"]
+    n_board_link["board_link"]
+    n_ntrip["ntrip"]
+    n_remote_cmd["remote_cmd"]
+    n_ota["ota"]
+    n_gwstate["gwstate"]
+    n_metrics["metrics"]
+    n_monitor["monitor"]
+    n_usage["usage"]
+    n_devcert["devcert"]
+    space
+    space
+    n_rmx_codec["rmx_codec"]
+    space
+    space
+    space
+    space
+    space
+    n_cell["cell"]
+    n_bl_uart["bl_uart"]
+    space
+    space
+    space
+    space
+    n_board["board"]
+    n_settings["settings"]
+    n_gw_tasks["gw_tasks"]
+    n_gw_link["gw_link"]
+    space
+    space
+    n_uart_modem[/"uart_modem<br/>uart"/]
+    n_uart2_board[/"uart2_board<br/>uart"/]
+    n_uart0_console[/"uart0_console<br/>uart"/]
+    n_gpio_board[/"gpio_board<br/>gpio"/]
+    space
+    space
   end
-  n_sim7600{{"sim7600<br/>SIM7600G-H LTE modem"}}
+  space
+  block:outside
+    columns 6
+    n_sim7600{{"sim7600<br/>SIM7600G-H LTE modem"}}
+    space
+    space
+    space
+    space
+    space
+  end
+  n_devcert --> n_uart0_console
+  n_cell --> n_sim7600
+  n_bl_uart --> n_uart2_board
+  n_board --> n_gpio_board
   n_uart_modem --- n_sim7600
-  n_devcert --- n_uart0_console
-  n_cell --- n_sim7600
-  n_bl_uart --- n_uart2_board
-  n_board --- n_gpio_board
+  classDef title fill:none,stroke:none
+  class chip_title title
 ```
 
 | Task | Component | Priority | Stack |

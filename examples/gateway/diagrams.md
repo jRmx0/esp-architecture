@@ -151,12 +151,25 @@ flowchart TD
 Layers from the top (application) to the bottom (platform).
 
 ```mermaid
-flowchart TB
-  subgraph L_l4_app["<b>l4_app</b>: Init order and the supervisor"]
+block-beta
+  columns 1
+  block:r_l4_app
+    columns 11
+    t_l4_app["l4_app<br/>Init order and the supervisor"]
     n_app_main["app_main"]
     n_supervisor["supervisor"]
+    space
+    space
+    space
+    space
+    space
+    space
+    space
+    space
   end
-  subgraph L_l3_services["<b>l3_services</b>: MQTT, board link, NTRIP, commands, OTA, state, metrics"]
+  block:r_l3_services
+    columns 11
+    t_l3_services["l3_services<br/>MQTT, board link, NTRIP, commands, OTA, state, metrics"]
     n_mqtt_link["mqtt_link"]
     n_board_link["board_link"]
     n_ntrip["ntrip"]
@@ -168,23 +181,50 @@ flowchart TB
     n_usage["usage"]
     n_devcert["devcert"]
   end
-  subgraph L_l2_codecs["<b>l2_codecs</b>: Pure C, no ESP-IDF or FreeRTOS includes, host-tested"]
+  block:r_l2_codecs
+    columns 11
+    t_l2_codecs["l2_codecs<br/>Pure C, no ESP-IDF or FreeRTOS includes, host-tested"]
     n_rmx_codec["rmx_codec"]
+    space
+    space
+    space
+    space
+    space
+    space
+    space
+    space
+    space
   end
-  subgraph L_l1_links["<b>l1_links</b>: Modem and PPP, board UART"]
+  block:r_l1_links
+    columns 11
+    t_l1_links["l1_links<br/>Modem and PPP, board UART"]
     n_cell["cell"]
     n_bl_uart["bl_uart"]
+    space
+    space
+    space
+    space
+    space
+    space
+    space
+    space
   end
-  subgraph L_l0_platform["<b>l0_platform</b>: Pins, NVS, task table, link state"]
+  block:r_l0_platform
+    columns 11
+    t_l0_platform["l0_platform<br/>Pins, NVS, task table, link state"]
     n_board["board"]
     n_settings["settings"]
     n_gw_tasks["gw_tasks"]
     n_gw_link["gw_link"]
+    space
+    space
+    space
+    space
+    space
+    space
   end
-  n_app_main ~~~ n_mqtt_link
-  n_mqtt_link ~~~ n_rmx_codec
-  n_rmx_codec ~~~ n_cell
-  n_cell ~~~ n_board
+  classDef title fill:#eee,stroke:#999
+  class t_l4_app,t_l3_services,t_l2_codecs,t_l1_links,t_l0_platform title
 ```
 
 <!-- esp-architecture:diagrams end -->

@@ -54,7 +54,17 @@ class Render(unittest.TestCase):
         self.assertIn("| `ui_task` | ui | 3 | 4096 |", block)
 
     def test_layers_stacked_in_manifest_order(self):
-        self.assertIn("n_ui ~~~ n_flash", self.text)
+        layering = self.text.split("## Layering")[1]
+        self.assertIn("block-beta", layering)
+        self.assertLess(layering.index("block:r_app"), layering.index("block:r_drivers"))
+        self.assertIn("columns 2", layering)  # title cell + at most one component per layer
+
+    def test_empty_layer_padded(self):
+        m = copy.deepcopy(FULL)
+        m["layers"].append({"id": "hal", "description": "nothing yet"})
+        layering = gd.render(m, "x").split("## Layering")[1]
+        self.assertIn("t_hal[", layering.split("block:r_hal")[1].split("end")[0])
+        self.assertIn("space", layering.split("block:r_hal")[1].split("end")[0])
 
     def test_heading_level(self):
         self.assertIn("\n### Context\n", gd.render(copy.deepcopy(FULL), "x", level=3))

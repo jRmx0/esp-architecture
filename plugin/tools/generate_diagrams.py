@@ -105,17 +105,18 @@ def organigram(m):
 
 
 def layering(m):
-    out, firsts = ["flowchart TB"], []
-    for layer in m["layers"]:
-        members = [node(c["id"]) for c in m["components"] if c["layer"] == layer["id"]] or [f"empty_{layer['id']}"]
-        firsts.append(members[0])
-        # no direction override: in TB, unlinked nodes of one rank form a row
-        out.append(f"  subgraph L_{layer['id']}[{label('<b>' + layer['id'] + '</b>: ' + layer['description'])}]")
-        out += [f"    {n}[{label(n[2:])}]" if n.startswith("n_") else f"    {n}[ ]" for n in members]
+    # block-beta draws a grid: one row per layer, a title cell, then the layer's components.
+    # flowchart subgraphs left uneven empty space between layers in GitHub's renderer.
+    rows = [(l, [c["id"] for c in m["components"] if c["layer"] == l["id"]]) for l in m["layers"]]
+    width = 1 + max(len(members) for _, members in rows)
+    out = ["block-beta", "  columns 1"]
+    for layer, members in rows:
+        out += [f"  block:r_{layer['id']}", f"    columns {width}",
+                f"    t_{layer['id']}[{label(layer['id'], layer['description'])}]"]
+        out += [f"    {node(c)}[{label(c)}]" for c in members]
+        out += ["    space"] * (width - 1 - len(members))
         out.append("  end")
-    # invisible links between one node per layer stack the layers; links between the subgraphs
-    # themselves leave empty space under some layers in GitHub's renderer
-    out += [f"  {a} ~~~ {b}" for a, b in zip(firsts, firsts[1:])]
+    out += ["  classDef title fill:#eee,stroke:#999", f"  class {','.join('t_' + l['id'] for l, _ in rows)} title"]
     return fence(out)
 
 

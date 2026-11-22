@@ -35,11 +35,11 @@ flowchart LR
   n_user_led["user LED"]
   n_autopilot_board["autopilot board"]
   n_ch9102["USB-UART bridge"]
-  n_sim7600 ---|"UART1"| cpu_box
-  n_sim7600 ---|"GPIO"| cpu_box
-  n_ch9102 ---|"UART0"| cpu_box
+  cpu_box ---|"UART1"| n_sim7600
+  cpu_box ---|"GPIO"| n_sim7600
   cpu_box ---|"GPIO"| n_user_led
   cpu_box ---|"UART2"| n_autopilot_board
+  cpu_box ---|"UART0"| n_ch9102
   classDef device fill:none,stroke:#888
   class n_sim7600,n_user_led,n_autopilot_board,n_ch9102 device
 ```
@@ -60,11 +60,11 @@ flowchart LR
   n_user_led["user LED"]
   n_autopilot_board["autopilot board"]
   n_ch9102["USB-UART bridge"]
-  n_sim7600 --- n_uart_modem
-  n_sim7600 --- n_gpio_board
-  n_ch9102 --- n_uart0_console
+  n_uart_modem --- n_sim7600
+  n_gpio_board --- n_sim7600
   n_gpio_board --- n_user_led
   n_uart2_board --- n_autopilot_board
+  n_uart0_console --- n_ch9102
   classDef device fill:none,stroke:#888
   class n_sim7600,n_user_led,n_autopilot_board,n_ch9102 device
 ```
@@ -99,14 +99,14 @@ flowchart LR
   n_gpio_board --- n_user_led
   n_uart2_board --- n_autopilot_board
   n_uart0_console --- n_ch9102
-  n_app --- n_platform
-  n_app --- n_server_link
-  n_app --- n_cellular
-  n_app --- n_autopilot_link
-  n_platform --- n_server_link
-  n_platform --- n_cellular
-  n_platform --- n_autopilot_link
+  n_cellular --- n_app
+  n_cellular --- n_platform
   n_server_link --- n_autopilot_link
+  n_server_link --- n_app
+  n_server_link --- n_platform
+  n_autopilot_link --- n_app
+  n_autopilot_link --- n_platform
+  n_app --- n_platform
   classDef bus fill:none,stroke:#888,stroke-dasharray:3 3
   class n_uart_modem,n_uart2_board,n_uart0_console,n_gpio_board bus
   classDef device fill:none,stroke:#888

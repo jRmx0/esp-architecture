@@ -72,39 +72,27 @@ def block(m):
     device outside it, joined by one line per bus, labelled with the bus's peripheral. Software:
     the same, but each bus is a box inside the processor, because it is driver code to write.
     Components come in lower levels."""
-    # Flowcharts, not block-beta: block-beta draws no edge labels and pins boxes to a grid.
-    # In LR, a device on an edge `device --- x` sits left, `x --- device` right.
+    # Flowcharts, not block-beta: block-beta cannot make boxes touch only when connected.
+    # No layout hints: the lines say only what is connected, and Mermaid places the boxes.
     hw = m.get("hardware", {})
     buses, devices = hw.get("buses", []), hw.get("devices", [])
     tag = {b["id"]: b.get("peripheral", b["kind"].upper()) for b in buses}
     shared = shared_buses(buses, devices)
-    # Devices sharing their first bus stay on one side; groups go largest first to the side with
-    # fewer lines, so the processor stays in the middle.
-    groups = {}
-    for d in devices:
-        groups.setdefault(bus_ids(d)[0], []).append(d)
-    sides, count = ([], []), [0, 0]
-    for g in sorted(groups.values(), key=lambda g: -sum(len(bus_ids(d)) for d in g)):
-        i = count[1] < count[0]
-        sides[i].extend(g)
-        count[i] += sum(len(bus_ids(d)) for d in g)
-    links = [(side, d, b) for side, ds in enumerate(sides) for d in ds for b in bus_ids(d)]
+    links = [(d, b) for d in devices for b in bus_ids(d)]  # every line runs inside out
     title = label("<b>" + hw.get("processor", m["system"]["name"]) + "</b>")
     # names only: what a device holds is a software decision, shown in lower levels
     boxes = [f"  {node(d['id'])}[{label(d.get('name', d['id']))}]" for d in devices]
     style = ["  classDef device fill:none,stroke:#888",
              f"  class {','.join(node(d['id']) for d in devices)} device"] if devices else []
-    amber = ",".join(str(n) for n, (_, _, b) in enumerate(links) if b in shared)
+    amber = ",".join(str(n) for n, (_, b) in enumerate(links) if b in shared)
     amber = [f"  linkStyle {amber} {AMBER}"] if amber else []
 
     # cpu_box has no n_ prefix, so no device or bus id can collide with it
     hard = ["flowchart LR", f"  cpu_box[{title}]", *boxes]
-    hard += [f"  {node(d['id'])} ---|{label(tag[b])}| cpu_box" if side == 0 else
-             f"  cpu_box ---|{label(tag[b])}| {node(d['id'])}" for side, d, b in links]
+    hard += [f"  cpu_box ---|{label(tag[b])}| {node(d['id'])}" for d, b in links]
     soft = ["flowchart LR", f"  subgraph cpu_box[{title}]"]
     soft += [f"    {node(b['id'])}[{label(tag[b['id']])}]" for b in buses] + ["  end", *boxes]
-    soft += [f"  {node(d['id'])} --- {node(b)}" if side == 0 else f"  {node(b)} --- {node(d['id'])}"
-             for side, d, b in links]
+    soft += [f"  {node(b)} --- {node(d['id'])}" for d, b in links]
     if shared:
         soft += [f"  classDef shared {AMBER}", f"  class {','.join(node(b) for b in shared)} shared"]
     return fence(hard + style + amber), fence(soft + style + amber), shared
@@ -114,8 +102,7 @@ def subsystems(m):
     """Level 2: the processor holds one box per subsystem and one per bus; devices sit outside on
     their buses as in level 1b. Lines join a subsystem to the buses its components drive. No arrows
     between subsystems: a plain line joins two when a component of one depends on one of the other,
-    either way; who calls whom is the organigram's job.
-    Subsystems that drive no bus sit one column further in, away from the hardware."""
+    either way; who calls whom is the organigram's job. No layout hints: Mermaid places the boxes."""
     hw = m.get("hardware", {})
     buses, devices = hw.get("buses", []), hw.get("devices", [])
     dev_buses = {d["id"]: bus_ids(d) for d in devices}
@@ -131,21 +118,11 @@ def subsystems(m):
     out += ["  end"] + [f"  {node(d['id'])}[{label(d.get('name', d['id']))}]" for d in devices]
     out += [f"  {node(s)} --- {node(b)}" for s, b in drives]
     out += [f"  {node(b)} --- {node(d['id'])}" for d in devices for b in bus_ids(d)]
-    edge = list(dict.fromkeys(s for s, _ in drives))
-    inner = [s["id"] for s in m["subsystems"] if s["id"] not in edge]
-    order = {s: i for i, s in enumerate(inner + edge)}  # a line runs inner to edge, so the inner one sits left
+    order = {s["id"]: i for i, s in enumerate(m["subsystems"])}
     sub = {c["id"]: c["subsystem"] for c in m["components"]}
     links = {tuple(sorted((sub[c["id"]], sub[d]), key=order.get))
              for c in m["components"] for d in c.get("depends_on", []) if d in sub and sub[d] != sub[c["id"]]}
     out += [f"  {node(a)} --- {node(b)}" for a, b in sorted(links, key=lambda l: (order[l[0]], order[l[1]]))]
-    # invisible links, declared last so they shift no linkStyle index. Every edge subsystem needs a line
-    # coming in from an inner one and every inner one a line out to an edge one, or the layout puts
-    # them in the wrong column; only those no real line places get one.
-    lone_in = [s for s in inner if not any(a == s and b in edge for a, b in links)]
-    lone_edge = [s for s in edge if not any(b == s and a in inner for a, b in links)]
-    pairs = max(len(lone_in), len(lone_edge)) if inner and edge else 0
-    li, le = lone_in or inner, lone_edge or edge  # a lone one may pair with one a real line already places
-    out += [f"  {node(li[i % len(li)])} ~~~ {node(le[i % len(le)])}" for i in range(pairs)]
     out += ["  classDef bus fill:none,stroke:#888,stroke-dasharray:3 3"] if buses else []
     out += [f"  class {','.join(node(b['id']) for b in buses)} bus"] if buses else []
     out += ["  classDef device fill:none,stroke:#888",

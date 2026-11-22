@@ -5,16 +5,32 @@
   "description": "arch/architecture.yaml: the single source of truth for an ESP-IDF project's architecture. Cross-references (layer, depends_on, hardware, flows) are checked by validate_manifest.py, not by this schema.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "system", "layers", "components"],
+  "required": [
+    "version",
+    "system",
+    "layers",
+    "components"
+  ],
   "properties": {
-    "version": { "const": 1 },
+    "version": {
+      "const": 1
+    },
     "system": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "description"],
+      "required": [
+        "name",
+        "description"
+      ],
       "properties": {
-        "name": { "type": "string", "minLength": 1 },
-        "description": { "type": "string", "minLength": 1 }
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "context": {
@@ -27,11 +43,26 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "kind", "description"],
+            "required": [
+              "id",
+              "kind",
+              "description"
+            ],
             "properties": {
-              "id": { "$ref": "#/$defs/id" },
-              "kind": { "enum": ["person", "system", "device"] },
-              "description": { "type": "string", "minLength": 1 }
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "kind": {
+                "enum": [
+                  "person",
+                  "system",
+                  "device"
+                ]
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           }
         },
@@ -41,11 +72,22 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["from", "to", "data"],
+            "required": [
+              "from",
+              "to",
+              "data"
+            ],
             "properties": {
-              "from": { "$ref": "#/$defs/id" },
-              "to": { "$ref": "#/$defs/id" },
-              "data": { "type": "string", "minLength": 1 }
+              "from": {
+                "$ref": "#/$defs/id"
+              },
+              "to": {
+                "$ref": "#/$defs/id"
+              },
+              "data": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           }
         }
@@ -61,11 +103,34 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "kind", "description"],
+            "required": [
+              "id",
+              "kind",
+              "description"
+            ],
             "properties": {
-              "id": { "$ref": "#/$defs/id" },
-              "kind": { "enum": ["uart", "spi", "i2c", "i2s", "gpio", "adc", "pwm", "usb", "sdio", "can", "other"] },
-              "description": { "type": "string", "minLength": 1 }
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "kind": {
+                "enum": [
+                  "uart",
+                  "spi",
+                  "i2c",
+                  "i2s",
+                  "gpio",
+                  "adc",
+                  "pwm",
+                  "usb",
+                  "sdio",
+                  "can",
+                  "other"
+                ]
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           }
         },
@@ -74,11 +139,22 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "bus", "description"],
+            "required": [
+              "id",
+              "bus",
+              "description"
+            ],
             "properties": {
-              "id": { "$ref": "#/$defs/id" },
-              "bus": { "$ref": "#/$defs/id" },
-              "description": { "type": "string", "minLength": 1 }
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "bus": {
+                "$ref": "#/$defs/id"
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           }
         }
@@ -91,11 +167,21 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "description"],
+        "required": [
+          "id",
+          "description"
+        ],
         "properties": {
-          "id": { "$ref": "#/$defs/id" },
-          "description": { "type": "string", "minLength": 1 },
-          "decisions": { "$ref": "#/$defs/decisions" }
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decisions": {
+            "$ref": "#/$defs/decisions"
+          }
         }
       }
     },
@@ -111,18 +197,72 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "layer", "description"],
+        "required": [
+          "id",
+          "layer",
+          "description"
+        ],
         "properties": {
-          "id": { "$ref": "#/$defs/id" },
-          "layer": { "$ref": "#/$defs/id" },
-          "path": { "description": "Directory of the ESP-IDF component, relative to the project root.", "type": "string" },
-          "description": { "type": "string", "minLength": 1 },
-          "depends_on": { "description": "Other components of this manifest it may call.", "$ref": "#/$defs/ids" },
-          "idf_requires": { "description": "ESP-IDF or managed components it may use (as in REQUIRES / PRIV_REQUIRES).", "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
-          "hardware": { "description": "Buses or devices it drives.", "$ref": "#/$defs/ids" },
-          "interfaces": { "description": "Public headers other components may include.", "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
-          "requirements": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^REQ-[0-9]{3}$" } },
-          "decisions": { "$ref": "#/$defs/decisions" }
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "layer": {
+            "$ref": "#/$defs/id"
+          },
+          "path": {
+            "description": "Directory of the ESP-IDF component, relative to the project root.",
+            "type": "string"
+          },
+          "sources": {
+            "description": "Globs, relative to the project root, of the files this component owns. Default: every .c/.h/.cpp/.hpp under path. Needed when several components share one ESP-IDF component directory.",
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "depends_on": {
+            "description": "Other components of this manifest it may call.",
+            "$ref": "#/$defs/ids"
+          },
+          "idf_requires": {
+            "description": "ESP-IDF or managed components it may use (as in REQUIRES / PRIV_REQUIRES).",
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "hardware": {
+            "description": "Buses or devices it drives.",
+            "$ref": "#/$defs/ids"
+          },
+          "interfaces": {
+            "description": "Public headers other components may include.",
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "requirements": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^REQ-[0-9]{3}$"
+            }
+          },
+          "decisions": {
+            "$ref": "#/$defs/decisions"
+          }
         }
       }
     },
@@ -131,13 +271,29 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "component"],
+        "required": [
+          "id",
+          "component"
+        ],
         "properties": {
-          "id": { "type": "string", "minLength": 1 },
-          "component": { "$ref": "#/$defs/id" },
-          "priority": { "type": "integer", "minimum": 0 },
-          "stack": { "type": "integer", "minimum": 512 },
-          "description": { "type": "string" }
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "component": {
+            "$ref": "#/$defs/id"
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "stack": {
+            "type": "integer",
+            "minimum": 512
+          },
+          "description": {
+            "type": "string"
+          }
         }
       }
     },
@@ -146,18 +302,47 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "component", "source"],
+        "required": [
+          "id",
+          "component",
+          "source"
+        ],
         "properties": {
-          "id": { "type": "string", "minLength": 1 },
-          "component": { "$ref": "#/$defs/id" },
-          "source": { "description": "Bus, device or peripheral that raises it.", "type": "string", "minLength": 1 }
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "component": {
+            "$ref": "#/$defs/id"
+          },
+          "source": {
+            "description": "Bus, device or peripheral that raises it.",
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     }
   },
   "$defs": {
-    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-    "ids": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
-    "decisions": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^DEC-[0-9]{3}$" } }
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^DEC-[0-9]{3}$"
+      }
+    }
   }
 }

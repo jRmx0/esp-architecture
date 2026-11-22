@@ -106,3 +106,46 @@ block-beta
   class left,right group
 ```
 
+## Level 2, subsystems: v1
+
+1a and 1b stay as they are (flowcharts). Level 2 in block-beta, as a grid inside the processor: the subsystems that drive no bus (app, platform) in the inner column, each bus-driving subsystem in the middle column on the same row as its bus, the bus boxes at the processor's edge, and the devices outside, on their bus's row.
+
+```mermaid
+block-beta
+  columns 5
+  block:cpu:3
+    columns 3
+    title["<b>ESP32-WROVER-E</b>"]:3
+    app["<b>app</b>"] server_link["<b>server_link</b>"] uart0["UART0"]
+    space autopilot_link["<b>autopilot_link</b>"] uart2["UART2"]
+    platform["<b>platform</b>"] cellular["<b>cellular</b>"] uart1["UART1"]
+    space space gpio["GPIO"]
+  end
+  space
+  block:devs
+    columns 1
+    space
+    ch9102["USB-UART bridge"]
+    autopilot_board["autopilot board"]
+    sim7600["SIM7600 modem"]
+    user_led["user LED"]
+  end
+  server_link --- uart0
+  autopilot_link --- uart2
+  cellular --- uart1
+  cellular --- gpio
+  uart0 --- ch9102
+  uart2 --- autopilot_board
+  uart1 --- sim7600
+  gpio --- sim7600
+  gpio --- user_led
+  classDef title fill:none,stroke:none
+  classDef bus fill:none,stroke:#888,stroke-dasharray:3 3
+  classDef device fill:none,stroke:#888
+  classDef group fill:none,stroke:none
+  class title title
+  class uart0,uart2,uart1,gpio bus
+  class ch9102,autopilot_board,sim7600,user_led device
+  class devs group
+```
+

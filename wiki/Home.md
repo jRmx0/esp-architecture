@@ -8,7 +8,7 @@ AI agents that write ESP-IDF firmware tend to ignore architecture. The plugin ma
 
 ## 2. Current state
 
-The plugin installs in Claude Code and has no skills or hooks yet. It ships the manifest schema and its validator (§4). The checker that compares code with the manifest, the diagram generator and the skills are planned in the epic's sub-issues.
+The plugin installs in Claude Code and has no skills or hooks yet. It ships the manifest schema and its validator (§4) and the checker that compares the code with the manifest (§5). The diagram generator and the skills are planned in the epic's sub-issues.
 
 ## 3. Rule sources
 
@@ -24,7 +24,7 @@ One file per project describes the architecture. The checker and the diagram gen
 | `context` | `actors` (person, system, device) and `flows` between `system` and an actor | Context diagram |
 | `hardware` | `buses` inside the chip, `devices` on a bus | Block diagram |
 | `layers` | Ordered from the top (application) to the bottom (platform) | Layering diagram |
-| `components` | Layer, `path`, `depends_on` (other components), `idf_requires` (ESP-IDF or managed components), `hardware`, `interfaces` (public headers), `requirements` (`REQ-nnn`), `decisions` (`DEC-nnn`) | Block diagram boxes; `depends_on` is the organigram |
+| `components` | Layer, `path` (the ESP-IDF component directory), `sources` (globs of the files it owns; default all sources under `path`), `depends_on` (other components), `idf_requires` (ESP-IDF or managed components), `hardware`, `interfaces` (public headers), `requirements` (`REQ-nnn`), `decisions` (`DEC-nnn`) | Block diagram boxes; `depends_on` is the organigram |
 | `allow_sideways` | Whether a component may depend on one in its own layer (default true) | Validator |
 | `tasks`, `isrs` | Owner component, priority, stack, source | Block diagram notes, the checker |
 
@@ -44,3 +44,36 @@ Exit 0 when valid, 1 with one error per line. Besides the schema it checks:
 - no dependency cycles
 
 Tests: `python -m unittest discover -s tests`.
+
+## 5. The checker
+
+```
+python plugin/tools/check_architecture.py --project <project root>
+```
+
+Reads `arch/architecture.yaml` (validated first) and `arch/baseline.txt`, then the project's ESP-IDF component directories: `main/` and `components/*/` with a `CMakeLists.txt`. Each violation has a stable key:
+
+| Key | Meaning |
+|---|---|
+| `include A -> B` | A file of component A includes a header of component B, and A does not list B in `depends_on`. The detail says `(upward)` when B is in a higher layer. One key per pair of components, not per file. |
+| `requires D -> R` | ESP-IDF component directory D requires R (`REQUIRES`, `PRIV_REQUIRES` or an `idf_component.yml` dependency), and no component in D allows it through `idf_requires` or `depends_on`. |
+| `shared C` | Component C shares its ESP-IDF component directory with another component, so the build cannot enforce the boundary between them. |
+| `unowned F` | Source file F belongs to no component. |
+| `ambiguous F` | Two components claim file F. |
+| `missing C` | Component C has a `path` but no files. Components without a `path` are planned and skipped. |
+
+Exit 0 when every violation is in the baseline and every baseline entry still occurs; 1 otherwise. `--write-baseline` records the current violations. Once a baseline exists it may only shrink: writing refuses new entries, and a fixed violation left in the baseline fails the check until it is removed. Done means an empty baseline.
+
+Includes are matched by header file name against the files components own; headers no component owns (ESP-IDF, libc) are skipped, and the build enforces those once each component is its own ESP-IDF component.
+
+Why it reads `CMakeLists.txt` and not the build's `project_description.json`: the description is only as current as the last build. PlatformIO writes it to `.pio/build/<env>/project_description.json`; in rmx-mower-gateway both that copy and `build/project_description.json` predated the last `main/CMakeLists.txt` change (checked 2026-11-22). Limits: literal names only (no `${VAR}`, no `if()`), and `EXTRA_COMPONENT_DIRS` is not read.
+
+### 5.1 First run on rmx-mower-gateway (2026-11-22)
+
+Code at `725a2ce`, manifest `examples/gateway/architecture.yaml` with `cell -> usage` removed (the validator rejects that upward edge). 78 violations:
+
+- 16 `shared`: every module except `rmx_codec` lives in `main`.
+- 47 `include` pairs, 6 upward: `cell` → `gwstate`, `metrics`, `usage`; `ota` → `supervisor`; `remote_cmd` → `supervisor`; `gw_tasks` → `rmx_codec`. Many of the others are edges the wiki's target graph leaves out on purpose (`gw_tasks`, `settings`) or never drew (`app_main` initialising every module).
+- 15 `requires`: the manifest gives no component `idf_requires` yet.
+
+The gap is mostly between the sketch and a manifest precise enough to enforce. Closing it is the pilot's work (rmx-lt/rmx-mower-gateway#120).

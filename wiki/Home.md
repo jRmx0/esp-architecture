@@ -8,7 +8,7 @@ AI agents that write ESP-IDF firmware tend to ignore architecture. The plugin ma
 
 ## 2. Current state
 
-The plugin installs in Claude Code and has no skills or hooks yet. It ships the manifest schema and its validator (§4) and the checker that compares the code with the manifest (§5). The diagram generator and the skills are planned in the epic's sub-issues.
+The plugin installs in Claude Code and has no skills or hooks yet. It ships the manifest schema and its validator (§4) the checker that compares the code with the manifest (§5) and the diagram generator (§6). The skills, hooks and decision records are planned in the epic's sub-issues.
 
 ## 3. Rule sources
 
@@ -77,3 +77,26 @@ Code at `725a2ce`, manifest `examples/gateway/architecture.yaml` with `cell -> u
 - 15 `requires`: the manifest gives no component `idf_requires` yet.
 
 The gap is mostly between the sketch and a manifest precise enough to enforce. Closing it is the pilot's work (rmx-lt/rmx-mower-gateway#120).
+
+## 6. Diagrams
+
+```
+python plugin/tools/generate_diagrams.py --project <project root> [--out FILE] [--level N]
+python plugin/tools/generate_diagrams.py --project <project root> --check
+python plugin/tools/generate_diagrams.py --project <project root> --as-is
+```
+
+Writes four Mermaid diagrams, which GitHub renders, into a marked section of `--out` (default `arch/diagrams.md`). Text outside the markers is kept, so the section can sit inside a wiki page; `--level` sets its heading level.
+
+| Diagram | Drawn from | Shows |
+|---|---|---|
+| Context | `system`, `context` | The device as one box, the actors around it, what flows each way |
+| Block | `components`, `hardware`, `tasks` | The chip: components in a row per layer, the peripherals (buses) below them; devices outside, on their bus; which component drives which bus or device. A task table follows. |
+| Organigram | `depends_on` | Who calls whom from the top down. Red box: a component used by more than one other (a shared resource). Red arrow: an upward dependency. |
+| Layering | `layers`, `components` | The layers stacked from the top, each component in its layer |
+
+`--check` exits 1 when the section is missing or differs from what the manifest generates now. `--as-is` prints the include graph the code has now (from the checker), with includes the manifest does not allow in red; it is for discovery and is not checked.
+
+A manifest with schema errors is refused. Rule errors (an upward edge, a cycle) only warn, so a design under discussion can still be drawn; the checker is what blocks.
+
+Examples, rendered on GitHub: `examples/gateway/diagrams.md` (target) and `examples/gateway/as-is.md` (code at rmx-lt/rmx-mower-gateway `725a2ce`: 69 edges, 46 not in the manifest, 6 upward).

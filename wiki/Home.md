@@ -14,7 +14,7 @@ The plugin installs in Claude Code and has no skills or hooks yet. It ships the 
 
 Rules are public, in our own words, each with an ID and a rationale. Where a rule comes from (book, page, context) is kept only in each maintainer's local `sources.local.yaml`, which git ignores, so no copyrighted text or citation is published. Espressif documentation is cited openly. The rules are in `plugin/rules/rules.yaml` (§8). Before a PR that touches them, a maintainer runs `python tools/check_sources.py`: it fails when a rule has no entry (source, location, context) in `sources.local.yaml` or an entry names no rule, and it skips when the file is absent, as in CI.
 
-## 4. The manifest: `arch/architecture.yaml`
+## 4. The manifest: `.esp-architecture/architecture.yaml`
 
 One file per project describes the architecture. The checker and the diagram generator read only this file. Schema: `plugin/schema/architecture.schema.json` (editors with the YAML language server pick it up from a `# yaml-language-server: $schema=...` first line). Example: `examples/gateway/architecture.yaml`, transcribed from rmx-mower-gateway; not a reviewed design.
 
@@ -33,7 +33,7 @@ Validate:
 
 ```
 pip install -r requirements.txt
-python plugin/tools/validate_manifest.py arch/architecture.yaml
+python plugin/tools/validate_manifest.py .esp-architecture/architecture.yaml
 ```
 
 Exit 0 when valid, 1 with one error per line. Besides the schema it checks:
@@ -52,7 +52,7 @@ Tests: `python -m unittest discover -s tests`.
 python plugin/tools/check_architecture.py --project <project root>
 ```
 
-Reads `arch/architecture.yaml` (validated first) and `arch/baseline.txt`, then the project's ESP-IDF component directories: `main/` and `components/*/` with a `CMakeLists.txt`. Each violation has a stable key:
+Reads `.esp-architecture/architecture.yaml` (validated first) and `.esp-architecture/baseline.txt`, then the project's ESP-IDF component directories: `main/` and `components/*/` with a `CMakeLists.txt`. Each violation has a stable key:
 
 | Key | Meaning |
 |---|---|
@@ -87,7 +87,7 @@ python plugin/tools/generate_diagrams.py --project <project root> --check
 python plugin/tools/generate_diagrams.py --project <project root> --as-is
 ```
 
-Writes six Mermaid diagrams (block: levels 1a, 1b and 2), which GitHub renders, into a marked section of `--out` (default `arch/diagrams.md`). Text outside the markers is kept, so the section can sit inside a wiki page; `--level` sets its heading level.
+Writes six Mermaid diagrams (block: levels 1a, 1b and 2), which GitHub renders, into a marked section of `--out` (default `.esp-architecture/diagrams.md`). Text outside the markers is kept, so the section can sit inside a wiki page; `--level` sets its heading level.
 
 Colour key, the same in every diagram: **amber** = shared (a bus with several devices, a component with several callers): not an error, check contention. **Red** = breaks a rule (an upward dependency; in `--as-is`, an include the manifest does not declare).
 
@@ -115,8 +115,8 @@ Every subsystem, layer and component in the manifest exists because of a decisio
 
 | File | Format |
 |---|---|
-| `arch/requirements.md` | Tables with the columns `ID \| Title \| Requirement`, one row per requirement: its ID in the first cell: `F-REQ-nnn` for a functional requirement (what the system does) or `NF-REQ-nnn` for a non-functional one (how well it does it, and the limits it fits in), a short title, and what is required and why (the outcome, not how it is built). `##` headings may group the tables by area |
-| `arch/decisions/DEC-nnn-slug.md` | One file per decision. First heading `# DEC-nnn Title`, then the sections `## Context` (the problem), `## Decision` (what was chosen), `## Alternatives` (what else was considered and why not) and `## Requirements` (the `REQ-nnn` IDs it serves), and optionally `## Rules` (the `RULE-nnn` IDs it applies, §8) |
+| `.esp-architecture/requirements.md` | Tables with the columns `ID \| Title \| Requirement`, one row per requirement: its ID in the first cell: `F-REQ-nnn` for a functional requirement (what the system does) or `NF-REQ-nnn` for a non-functional one (how well it does it, and the limits it fits in), a short title, and what is required and why (the outcome, not how it is built). `##` headings may group the tables by area |
+| `.esp-architecture/decisions/DEC-nnn-slug.md` | One file per decision. First heading `# DEC-nnn Title`, then the sections `## Context` (the problem), `## Decision` (what was chosen), `## Alternatives` (what else was considered and why not) and `## Requirements` (the requirement IDs it serves), and optionally `## Rules` (the `RULE-nnn` IDs it applies, §8) |
 
 The manifest cites them: `decisions` on each subsystem, layer and component, and optional `requirements` on a component.
 

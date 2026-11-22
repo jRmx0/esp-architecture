@@ -35,7 +35,7 @@ def run(*args):
 
 class Render(unittest.TestCase):
     def setUp(self):
-        self.text = gd.render(copy.deepcopy(FULL), "arch/architecture.yaml")
+        self.text = gd.render(copy.deepcopy(FULL), ".esp-architecture/architecture.yaml")
 
     def test_four_diagrams_in_order(self):
         heads = [l for l in self.text.splitlines() if l.startswith("## ")]
@@ -254,8 +254,8 @@ class Cli(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = pathlib.Path(self.tmp.name)
-        (self.root / "arch").mkdir()
-        (self.root / "arch/architecture.yaml").write_text(yaml.safe_dump(FULL), encoding="utf-8")
+        (self.root / ".esp-architecture").mkdir()
+        (self.root / ".esp-architecture/architecture.yaml").write_text(yaml.safe_dump(FULL), encoding="utf-8")
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -274,7 +274,7 @@ class Cli(unittest.TestCase):
         m = copy.deepcopy(FULL)
         m["components"][0]["description"] = "changed"
         m["layers"][0]["description"] = "changed"
-        (self.root / "arch/architecture.yaml").write_text(yaml.safe_dump(m), encoding="utf-8")
+        (self.root / ".esp-architecture/architecture.yaml").write_text(yaml.safe_dump(m), encoding="utf-8")
         self.assertEqual(run("--project", str(self.root), "--check")[0], 1)
 
     def test_keeps_text_outside_the_markers(self):
@@ -288,7 +288,7 @@ class Cli(unittest.TestCase):
         self.assertEqual(text.count(gd.END), 1)
 
     def test_schema_error_refused(self):
-        (self.root / "arch/architecture.yaml").write_text("version: 1\n", encoding="utf-8")
+        (self.root / ".esp-architecture/architecture.yaml").write_text("version: 1\n", encoding="utf-8")
         code, out, _ = run("--project", str(self.root))
         self.assertEqual(code, 1)
         self.assertIn("Fix the manifest first", out)
@@ -296,7 +296,7 @@ class Cli(unittest.TestCase):
     def test_rule_error_drawn_with_warning(self):
         m = copy.deepcopy(FULL)
         m["components"][1]["depends_on"] = ["ui"]
-        (self.root / "arch/architecture.yaml").write_text(yaml.safe_dump(m), encoding="utf-8")
+        (self.root / ".esp-architecture/architecture.yaml").write_text(yaml.safe_dump(m), encoding="utf-8")
         code, _, err = run("--project", str(self.root))
         self.assertEqual(code, 0)
         self.assertIn("warning:", err)

@@ -2,7 +2,7 @@
 
 usage: python check_records.py [--project DIR]
 
-Reads <project>/arch/architecture.yaml, arch/requirements.md and arch/decisions/DEC-nnn-*.md.
+Reads <project>/.esp-architecture/architecture.yaml, .esp-architecture/requirements.md and .esp-architecture/decisions/DEC-nnn-*.md.
 Exit 0 when every component, layer and subsystem cites a decision, every cited ID exists,
 and every decision cites a requirement; 1 with one error per line otherwise; 2 on bad usage.
 
@@ -64,7 +64,7 @@ def section(text, name):
 
 def check(root, manifest):
     """Return a list of error strings; empty means every decision is backed."""
-    arch = root / "arch"
+    arch = root / ".esp-architecture"
     req_list = requirement_ids(arch / "requirements.md")
     reqs = set(req_list)
     errors = [f"requirements.md: {r} used twice" for r in sorted(reqs) if req_list.count(r) > 1]
@@ -90,7 +90,7 @@ def check(root, manifest):
             where = f"{kind[:-1]} {item['id']}"
             if not item.get("decisions"):
                 errors.append(f"{where}: cites no decision")
-            errors += [f"{where}: {d} has no record in arch/decisions" for d in item.get("decisions", [])
+            errors += [f"{where}: {d} has no record in .esp-architecture/decisions" for d in item.get("decisions", [])
                        if d not in records]
             errors += [f"{where}: {r} is not in requirements.md" for r in item.get("requirements", [])
                        if r not in reqs]
@@ -101,7 +101,7 @@ def main(argv):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--project", default=".")
     root = pathlib.Path(ap.parse_args(argv[1:]).project).resolve()
-    path = root / "arch" / "architecture.yaml"
+    path = root / ".esp-architecture" / "architecture.yaml"
     try:
         manifest = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     except (OSError, yaml.YAMLError) as e:

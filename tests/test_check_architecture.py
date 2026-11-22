@@ -40,7 +40,7 @@ class Project:
     def __init__(self, manifest=MANIFEST, files=FILES):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = pathlib.Path(self.tmp.name)
-        self.write("arch/architecture.yaml", yaml.safe_dump(manifest))
+        self.write(".esp-architecture/architecture.yaml", yaml.safe_dump(manifest))
         for path, text in files.items():
             self.write(path, text)
 
@@ -50,7 +50,7 @@ class Project:
         p.write_text(text, encoding="utf-8")
 
     def violations(self):
-        return ca.find_violations(self.root, yaml.safe_load((self.root / "arch/architecture.yaml").read_text()))
+        return ca.find_violations(self.root, yaml.safe_load((self.root / ".esp-architecture/architecture.yaml").read_text()))
 
     def run(self, *args):
         out = io.StringIO()
@@ -190,7 +190,7 @@ class Baseline(unittest.TestCase):
 
     def test_invalid_manifest_stops_the_check(self):
         with Project() as p:
-            p.write("arch/architecture.yaml", "version: 1\n")
+            p.write(".esp-architecture/architecture.yaml", "version: 1\n")
             code, out = p.run()
             self.assertEqual(code, 1)
             self.assertIn("Fix the manifest first", out)

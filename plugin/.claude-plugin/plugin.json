@@ -2,9 +2,9 @@
   "name": "esp-architecture",
   "version": "0.1.0",
   "description": "Architecture as code for ESP-IDF projects: sourced rules, a blocking checker and generated diagrams.",
-  "author": { "name": "rmx-lt" },
-  "homepage": "https://github.com/rmx-lt/esp-architecture",
-  "repository": "https://github.com/rmx-lt/esp-architecture",
+  "author": { "name": "jRmx0" },
+  "homepage": "https://github.com/jRmx0/esp-architecture",
+  "repository": "https://github.com/jRmx0/esp-architecture",
   "license": "Apache-2.0",
   "keywords": ["esp-idf", "esp32", "architecture", "embedded"]
 }

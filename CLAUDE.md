@@ -1,14 +1,19 @@
 # esp-architecture — notes for agents
 
-Project-wide agent rules live in the meta repo's [CLAUDE.md](https://github.com/rmx-lt/blade-of-grass/blob/development/CLAUDE.md); docs follow [Wiki-Policy](https://github.com/rmx-lt/blade-of-grass/blob/development/wiki/Wiki-Policy.md). This file only adds what is specific to this repo.
+Goal and plan: [epic #1](https://github.com/jRmx0/esp-architecture/issues/1). Work is issues in this repo (labels `epic`, `enhancement`, `bug`, ...; no project board).
 
-Goal and plan: [epic #1](https://github.com/rmx-lt/esp-architecture/issues/1). Work is issues in this repo; they are not on the Blade of Grass board.
+## Where things live
+
+- Knowledge (how it works, decisions, how-tos): pages in `wiki/`, changed only by PR, current state only. Not the GitHub wiki.
+- Repo markdown otherwise: this file and a short README.
+- Branches: `feat/<issue#>-slug` → PR → `development` (default). Every PR closes at least one open issue.
+- Reusable ESP-IDF facts learned here go to the esp-knowledge hub, not this repo.
 
 ## Scope
 
 - Architecture only: layers, components, dependencies, interfaces, tasks, decisions, diagrams. Not coding style, power or timing.
 - ESP-IDF framework only (PlatformIO `framework = espidf` or `idf.py`).
-- The pilot project is rmx-mower-gateway ([rmx-mower-gateway#120](https://github.com/rmx-lt/rmx-mower-gateway/issues/120)): prove each feature on it.
+- The pilot project is rmx-lt/rmx-mower-gateway ([rmx-lt/rmx-mower-gateway#120](https://github.com/rmx-lt/rmx-mower-gateway/issues/120)): prove each feature on it.
 
 ## Rules
 

@@ -1,6 +1,6 @@
-# Esp-Architecture: architecture as code for ESP-IDF projects
+# esp-architecture: architecture as code for ESP-IDF projects
 
-What the [esp-architecture](https://github.com/rmx-lt/esp-architecture) plugin is and how it is used. The plan and open work are in [epic #1](https://github.com/rmx-lt/esp-architecture/issues/1).
+What the [esp-architecture](https://github.com/jRmx0/esp-architecture) plugin is and how it is used. The plan and open work are in [epic #1](https://github.com/jRmx0/esp-architecture/issues/1).
 
 ## 1. Purpose
 

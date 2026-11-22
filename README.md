@@ -4,16 +4,16 @@ A Claude Code plugin that makes the architecture of an ESP-IDF project code that
 
 Scope: architecture only, ESP-IDF framework only (PlatformIO `framework = espidf` or `idf.py`). It is meant for existing projects too: discover, gather requirements, design, then refactor to the design.
 
-Status: early. The plugin installs but has no skills, hooks or checker yet; the plan is [epic #1](https://github.com/rmx-lt/esp-architecture/issues/1).
+Status: early. The plugin installs but has no skills, hooks or checker yet; the plan is [epic #1](https://github.com/jRmx0/esp-architecture/issues/1).
 
-Documentation: wiki page [Esp-Architecture](https://github.com/rmx-lt/blade-of-grass/wiki/Esp-Architecture).
+Documentation: [wiki/Home.md](wiki/Home.md).
 
 ## Install
 
 In Claude Code:
 
 ```
-/plugin install esp-architecture --marketplace rmx-lt/esp-architecture
+/plugin install esp-architecture --marketplace jRmx0/esp-architecture
 ```
 
 From a local clone: `/plugin marketplace add <path to clone>`, then `/plugin install esp-architecture@esp-architecture`.

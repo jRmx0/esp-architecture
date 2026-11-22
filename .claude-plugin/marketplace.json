@@ -2,7 +2,7 @@
   "name": "esp-architecture",
   "description": "The esp-architecture plugin for ESP-IDF projects.",
   "owner": {
-    "name": "rmx-lt"
+    "name": "jRmx0"
   },
   "plugins": [
     {

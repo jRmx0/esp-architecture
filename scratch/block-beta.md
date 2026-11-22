@@ -187,3 +187,40 @@ block-beta
   class ch9102,autopilot_board,sim7600,user_led device
   class devs group
 ```
+
+## Level 2, subsystems: v3
+
+v2 change, from the user: one style for every box. Subsystems, buses and devices are all plain outlines with plain labels; only the processor's title is bold.
+
+```mermaid
+block-beta
+  columns 5
+  block:cpu:3
+    columns 3
+    title["<b>ESP32-WROVER-E</b>"]:3
+    app["app"] server_link["server_link"] uart0["UART0"]
+    space autopilot_link["autopilot_link"] uart2["UART2"]
+    platform["platform"] cellular["cellular"] uart1["UART1"]
+    space space gpio["GPIO"]
+  end
+  space
+  block:devs
+    columns 1
+    space
+    ch9102["USB-UART bridge"]
+    autopilot_board["autopilot board"]
+    sim7600["SIM7600 modem"]
+    user_led["user LED"]
+  end
+  uart0 --- ch9102
+  uart2 --- autopilot_board
+  uart1 --- sim7600
+  gpio --- sim7600
+  gpio --- user_led
+  classDef title fill:none,stroke:none
+  classDef box fill:none,stroke:#888
+  classDef group fill:none,stroke:none
+  class title title
+  class app,server_link,autopilot_link,platform,cellular,uart0,uart2,uart1,gpio,ch9102,autopilot_board,sim7600,user_led box
+  class devs group
+```

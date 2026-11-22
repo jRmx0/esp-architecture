@@ -261,3 +261,75 @@ block-beta
   class ch9102,autopilot_board,sim7600,user_led box
   class devs group
 ```
+
+## Level 2, subsystems: v5 (touch only when connected)
+
+Rule from the user: two boxes touch only when they are connected; otherwise a gap. Connected: a component in one depends on a component in the other (either way), or a subsystem drives a bus. A box spans as many columns as it needs to touch everything it connects to.
+
+The gateway has such a layout. Box sizes come only from the connections: platform is used by all four other subsystems, so it spans the whole width under them; cellular drives two buses, so it spans both and the gap between them.
+
+- Touching, all connected: app–platform, app–server_link, app–cellular, server_link–platform, autopilot_link–server_link, autopilot_link–platform, cellular–platform; cellular–UART1, cellular–GPIO, server_link–UART0, autopilot_link–UART2.
+- Gaps, not connected: app–autopilot_link, cellular–server_link, cellular–autopilot_link, every bus–bus pair, app and every bus.
+
+A box can't span rows in block-beta, so a box used by many grows sideways and the layers stack top to bottom. The hardware edge is therefore the top: buses in the top row, devices above the processor. platform, which drives no bus, sits at the bottom, furthest from the hardware; app drives none either and has a gap above it.
+
+v5a, Mermaid's default padding between boxes (touching boxes still have a thin gap; a real gap is a whole empty cell):
+
+```mermaid
+block-beta
+  columns 1
+  block:devs
+    columns 7
+    sim7600["SIM7600 modem"]:2 user_led["user LED"] space ch9102["USB-UART bridge"] space autopilot_board["autopilot board"]
+  end
+  space
+  block:cpu
+    columns 7
+    title["<b>ESP32-WROVER-E</b>"]:7
+    uart1["<b>UART1</b>"] space gpio["<b>GPIO</b>"] space uart0["<b>UART0</b>"] space uart2["<b>UART2</b>"]
+    cellular["<b>cellular</b>"]:3 app["<b>app</b>"] server_link["<b>server_link</b>"]:2 autopilot_link["<b>autopilot_link</b>"]
+    platform["<b>platform</b>"]:7
+  end
+  uart1 --- sim7600
+  gpio --- sim7600
+  gpio --- user_led
+  uart0 --- ch9102
+  uart2 --- autopilot_board
+  classDef title fill:none,stroke:none
+  classDef box fill:none,stroke:#888
+  classDef group fill:none,stroke:none
+  class title title
+  class sim7600,user_led,ch9102,autopilot_board box
+  class devs group
+```
+
+v5b, the same with the padding between boxes set to 0, so touching boxes really touch:
+
+```mermaid
+%%{init: {"block": {"padding": 0}}}%%
+block-beta
+  columns 1
+  block:devs
+    columns 7
+    sim7600["SIM7600 modem"]:2 user_led["user LED"] space ch9102["USB-UART bridge"] space autopilot_board["autopilot board"]
+  end
+  space
+  block:cpu
+    columns 7
+    title["<b>ESP32-WROVER-E</b>"]:7
+    uart1["<b>UART1</b>"] space gpio["<b>GPIO</b>"] space uart0["<b>UART0</b>"] space uart2["<b>UART2</b>"]
+    cellular["<b>cellular</b>"]:3 app["<b>app</b>"] server_link["<b>server_link</b>"]:2 autopilot_link["<b>autopilot_link</b>"]
+    platform["<b>platform</b>"]:7
+  end
+  uart1 --- sim7600
+  gpio --- sim7600
+  gpio --- user_led
+  uart0 --- ch9102
+  uart2 --- autopilot_board
+  classDef title fill:none,stroke:none
+  classDef box fill:none,stroke:#888
+  classDef group fill:none,stroke:none
+  class title title
+  class sim7600,user_led,ch9102,autopilot_board box
+  class devs group
+```

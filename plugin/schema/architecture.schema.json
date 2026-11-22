@@ -177,8 +177,13 @@
                 "type": "string",
                 "minLength": 1
               },
+              "name": {
+                "description": "Display name in diagram boxes (e.g. SIM7600 modem); the id when absent.",
+                "type": "string",
+                "minLength": 1
+              },
               "holds": {
-                "description": "What the device stores, shown in its box (e.g. firmware version, image data).",
+                "description": "What the device stores (e.g. firmware version, image data); a software decision, so the hardware level does not show it.",
                 "type": "array",
                 "items": {
                   "type": "string",

@@ -11,7 +11,6 @@ import argparse
 import pathlib
 import re
 import sys
-import textwrap
 
 import yaml
 
@@ -23,7 +22,6 @@ BEGIN = "<!-- esp-architecture:diagrams begin: generated from {src} by generate_
 END = "<!-- esp-architecture:diagrams end -->"
 SECTION = re.compile(r"<!-- esp-architecture:diagrams begin.*?<!-- esp-architecture:diagrams end -->", re.S)
 RED = "stroke:#d33,stroke-width:2px"
-HOLDS_WIDTH = 22  # characters per line of a device's holds in the block diagram
 PER_LINE = 6  # components per line in the layering grid
 
 
@@ -80,12 +78,10 @@ def block(m):
         sides[i].extend(g)
         count[i] += sum(len(bus_ids(d)) for d in g)
 
-    def wrap(items):  # breaks only between items: textwrap does not split at a no-break space
-        return [s.replace(" ", " ") for s in textwrap.wrap(", ".join(i.replace(" ", " ") for i in items), HOLDS_WIDTH)]
-
     # cpu_box has no n_ prefix, so no device id can collide with it
     out = ["flowchart LR", f"  cpu_box[{label('<b>' + hw.get('processor', m['system']['name']) + '</b>')}]"]
-    out += [f"  {node(d['id'])}[{label(d['id'], *wrap(d.get('holds', [])))}]" for d in devices]
+    # names only: what a device holds is a software decision, shown in lower levels
+    out += [f"  {node(d['id'])}[{label(d.get('name', d['id']))}]" for d in devices]
     # GPIO lines are separate pins, so several devices on GPIO do not contend
     shared = [b["id"] for b in buses if len(on[b["id"]]) > 1 and b["kind"] != "gpio"]
     red, n = [], 0

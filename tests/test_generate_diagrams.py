@@ -78,7 +78,7 @@ class Render(unittest.TestCase):
         text = gd.render(m, "x")
         block = text.split("## Block")[1].split("```")[1]
         self.assertIn('cpu_box["<b>ESP32-S3</b>"]', block)
-        self.assertIn('n_nor["nor<br/>fonts, images"]', block)
+        self.assertIn('n_nor["nor"]', block)  # holds are not shown at the hardware level
         # devices sharing a bus stay on one side (left); the other group goes right
         edges = [l.strip() for l in block.splitlines() if "---|" in l]
         self.assertEqual(edges, ['n_nor ---|"SPI"| cpu_box', 'n_lcd ---|"SPI"| cpu_box', 'cpu_box ---|"I2C"| n_imu'])
@@ -102,11 +102,11 @@ class Render(unittest.TestCase):
         self.assertIn("class n_modem,n_led,n_mcu device", block)
         self.assertNotIn("linkStyle", block)  # two devices on GPIO pins do not contend
 
-    def test_block_holds_wrap_between_items(self):
+    def test_block_device_name_falls_back_to_id(self):
         m = copy.deepcopy(FULL)
-        m["hardware"]["devices"][0]["holds"] = ["2 OTA slots", "NVS", "core dump", "storage"]
+        m["hardware"]["devices"][0]["name"] = "NOR flash"
         block = gd.render(m, "x").split("## Block")[1].split("```")[1]
-        self.assertIn('n_nor["nor<br/>2 OTA slots, NVS,<br/>core dump, storage"]', block)
+        self.assertIn('n_nor["NOR flash"]', block)
 
     def test_block_without_hardware_still_names_the_processor(self):
         m = copy.deepcopy(FULL)

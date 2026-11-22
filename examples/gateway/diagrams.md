@@ -29,12 +29,12 @@ Level 1, hardware: the processor and the devices outside it, one line per bus. R
 ```mermaid
 flowchart LR
   cpu_box["<b>ESP32</b>"]
-  n_sim7600["sim7600"]
-  n_user_led["user_led"]
-  n_autopilot_board["autopilot_board"]
-  n_ch9102["ch9102"]
-  n_flash["flash<br/>2 OTA slots, NVS,<br/>core dump, storage"]
-  n_psram["psram<br/>large heap buffers"]
+  n_sim7600["SIM7600 modem"]
+  n_user_led["user LED"]
+  n_autopilot_board["autopilot board"]
+  n_ch9102["USB-UART bridge"]
+  n_flash["flash"]
+  n_psram["PSRAM"]
   n_sim7600 ---|"UART1"| cpu_box
   n_sim7600 ---|"GPIO"| cpu_box
   n_user_led ---|"GPIO"| cpu_box

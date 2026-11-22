@@ -109,6 +109,9 @@ class Rejects(unittest.TestCase):
     def test_device_planned_is_refused(self):
         self.check(m(a=lambda d: d["hardware"]["devices"][0].update(planned=True)), "planned")
 
+    def test_device_name_accepted(self):
+        self.assertEqual(vm.validate(m(a=lambda d: d["hardware"]["devices"][0].update(name="SIM7600 modem"))), [])
+
     def test_holds_must_be_a_list(self):
         self.check(m(a=lambda d: d["hardware"]["devices"][0].update(holds="fonts")), "holds")
 

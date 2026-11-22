@@ -39,12 +39,12 @@ hardware:
     # flash and PSRAM share the SPI0/1 memory bus (ESP-IDF SPI flash concurrency docs)
     - { id: spi_mem, kind: spi, peripheral: SPI0/1, description: Memory bus to the module's flash and PSRAM }
   devices:
-    - { id: sim7600, bus: [uart_modem, gpio_board], description: SIM7600G-H LTE modem }
-    - { id: user_led, bus: gpio_board, description: Blue user LED on GPIO12 }
-    - { id: autopilot_board, bus: uart2_board, description: "Mower autopilot board (link planned, rmx-mower-gateway#62)" }
-    - { id: ch9102, bus: uart0_console, description: USB-UART bridge to the provisioning PC }
-    - { id: flash, bus: spi_mem, description: "16 MB QIO flash (partitions.csv)", holds: [2 OTA slots, NVS, core dump, storage] }
-    - { id: psram, bus: spi_mem, description: "8 MB PSRAM, SPIRAM_USE_MALLOC", holds: [large heap buffers] }
+    - { id: sim7600, name: SIM7600 modem, bus: [uart_modem, gpio_board], description: SIM7600G-H LTE modem }
+    - { id: user_led, name: user LED, bus: gpio_board, description: Blue user LED on GPIO12 }
+    - { id: autopilot_board, name: autopilot board, bus: uart2_board, description: "Mower autopilot board (link planned, rmx-mower-gateway#62)" }
+    - { id: ch9102, name: USB-UART bridge, bus: uart0_console, description: USB-UART bridge to the provisioning PC }
+    - { id: flash, name: flash, bus: spi_mem, description: "16 MB QIO flash (partitions.csv)", holds: [2 OTA slots, NVS, core dump, storage] }
+    - { id: psram, name: PSRAM, bus: spi_mem, description: "8 MB PSRAM, SPIRAM_USE_MALLOC", holds: [large heap buffers] }
 
 layers:
   - { id: l4_app, description: Init order and the supervisor }

@@ -36,7 +36,7 @@ def record(dec, reqs="F-REQ-001"):
 
 
 FILES = {
-    ".esp-architecture/requirements.md": REQS,
+    ".esp-architecture/requirements/requirements.md": REQS,
     ".esp-architecture/decisions/DEC-001-one-layer.md": record("DEC-001", "F-REQ-001, NF-REQ-002"),
     ".esp-architecture/decisions/DEC-002-ui-component.md": record("DEC-002", "F-REQ-001, NF-REQ-002"),
 }
@@ -46,7 +46,7 @@ class Project:
     def __init__(self, manifest=MANIFEST, files=FILES):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = pathlib.Path(self.tmp.name)
-        self.write(".esp-architecture/architecture.yaml", yaml.safe_dump(manifest))
+        self.write(".esp-architecture/manifest/architecture.yaml", yaml.safe_dump(manifest))
         for path, text in files.items():
             self.write(path, text)
 
@@ -56,7 +56,7 @@ class Project:
         p.write_text(text, encoding="utf-8")
 
     def errors(self):
-        return cr.check(self.root, yaml.safe_load((self.root / ".esp-architecture/architecture.yaml").read_text()))
+        return cr.check(self.root, yaml.safe_load((self.root / ".esp-architecture/manifest/architecture.yaml").read_text()))
 
     def run(self):
         out = io.StringIO()
@@ -111,14 +111,14 @@ class Records(unittest.TestCase):
 
     def test_only_table_rows_define_requirements(self):
         with Project() as p:
-            p.write(".esp-architecture/requirements.md", REQS + "\n## F-REQ-003 Old heading form\nSee F-REQ-004.\n")
-            self.assertEqual(cr.requirement_ids(p.root / ".esp-architecture/requirements.md"), ["F-REQ-001", "NF-REQ-002"])
-            p.write(".esp-architecture/requirements.md", REQS + req_row("REQ-003", "No kind prefix"))
-            self.assertEqual(cr.requirement_ids(p.root / ".esp-architecture/requirements.md"), ["F-REQ-001", "NF-REQ-002"])
+            p.write(".esp-architecture/requirements/requirements.md", REQS + "\n## F-REQ-003 Old heading form\nSee F-REQ-004.\n")
+            self.assertEqual(cr.requirement_ids(p.root / ".esp-architecture/requirements/requirements.md"), ["F-REQ-001", "NF-REQ-002"])
+            p.write(".esp-architecture/requirements/requirements.md", REQS + req_row("REQ-003", "No kind prefix"))
+            self.assertEqual(cr.requirement_ids(p.root / ".esp-architecture/requirements/requirements.md"), ["F-REQ-001", "NF-REQ-002"])
 
     def test_requirement_served_by_no_decision(self):
         with Project() as p:
-            p.write(".esp-architecture/requirements.md", REQS + req_row("F-REQ-003", "Log faults"))
+            p.write(".esp-architecture/requirements/requirements.md", REQS + req_row("F-REQ-003", "Log faults"))
             self.assertEqual(p.errors(), ["requirements.md: F-REQ-003 is served by no decision"])
 
     def test_rules_section_cites_catalog_rules(self):
@@ -141,7 +141,7 @@ class Records(unittest.TestCase):
 
     def test_duplicate_ids(self):
         with Project() as p:
-            p.write(".esp-architecture/requirements.md", REQS + req_row("F-REQ-001", "Again"))
+            p.write(".esp-architecture/requirements/requirements.md", REQS + req_row("F-REQ-001", "Again"))
             p.write(".esp-architecture/decisions/DEC-001-again.md", record("DEC-001"))
             self.assertEqual(p.errors(), ["requirements.md: F-REQ-001 used twice", "DEC-001-one-layer.md: DEC-001 used twice"])
 
@@ -154,7 +154,7 @@ class Records(unittest.TestCase):
 
     def test_invalid_manifest_stops_the_check(self):
         with Project() as p:
-            p.write(".esp-architecture/architecture.yaml", "version: 1\n")
+            p.write(".esp-architecture/manifest/architecture.yaml", "version: 1\n")
             code, out = p.run()
             self.assertEqual(code, 1)
             self.assertIn("Fix the manifest first", out)

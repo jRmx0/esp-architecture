@@ -1,8 +1,8 @@
-"""Check an ESP-IDF project's code against its .esp-architecture/architecture.yaml.
+"""Check an ESP-IDF project's code against its .esp-architecture/manifest/architecture.yaml.
 
 usage: python check_architecture.py [--project DIR] [--manifest FILE] [--baseline FILE] [--write-baseline]
 
-Defaults: --project . , --manifest <project>/.esp-architecture/architecture.yaml, --baseline <project>/.esp-architecture/baseline.txt.
+Defaults: --project . , --manifest <project>/.esp-architecture/manifest/architecture.yaml, --baseline <project>/.esp-architecture/baseline/baseline.txt.
 Exit 0 when every violation is in the baseline and every baseline entry still occurs,
 1 otherwise, 2 on bad usage. --write-baseline records the current violations; once a
 baseline exists it may only shrink.
@@ -158,8 +158,8 @@ def main(argv):
     ap.add_argument("--write-baseline", action="store_true")
     args = ap.parse_args(argv[1:])
     root = pathlib.Path(args.project).resolve()
-    manifest_path = pathlib.Path(args.manifest) if args.manifest else root / ".esp-architecture" / "architecture.yaml"
-    baseline_path = pathlib.Path(args.baseline) if args.baseline else root / ".esp-architecture" / "baseline.txt"
+    manifest_path = pathlib.Path(args.manifest) if args.manifest else root / ".esp-architecture" / "manifest" / "architecture.yaml"
+    baseline_path = pathlib.Path(args.baseline) if args.baseline else root / ".esp-architecture" / "baseline" / "baseline.txt"
 
     try:
         manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8")) or {}

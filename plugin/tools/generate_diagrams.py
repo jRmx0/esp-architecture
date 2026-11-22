@@ -11,6 +11,7 @@ import argparse
 import pathlib
 import re
 import sys
+import textwrap
 
 import yaml
 
@@ -23,6 +24,7 @@ END = "<!-- esp-architecture:diagrams end -->"
 SECTION = re.compile(r"<!-- esp-architecture:diagrams begin.*?<!-- esp-architecture:diagrams end -->", re.S)
 RED = "stroke:#d33,stroke-width:2px"
 NBSP = "&nbsp;"
+HOLDS_WIDTH = 22  # characters per line of a device's holds in the block diagram
 PER_LINE = 6  # components per line in the layering grid
 
 
@@ -93,15 +95,24 @@ def block(m):
     rows = [r + [(None, None)] * (height - len(r)) for r in rows]
     title = hw.get("processor", m["system"]["name"])
 
-    # Every cell has exactly two lines: the side columns are separate grids, so devices line up
-    # with their buses only while all cells are the same height. A blank line is a no-break space.
+    # The side columns are separate grids, so devices line up with their buses only while every
+    # cell has the same number of lines; short cells are padded with no-break spaces. Holds wrap,
+    # because every column is as wide as the widest cell in the whole grid.
+    def wrap(items):  # breaks only between items: textwrap does not split at a no-break space
+        return [s.replace("\xa0", " ") for s in textwrap.wrap(", ".join(i.replace(" ", "\xa0") for i in items), HOLDS_WIDTH)]
+
+    text = {d["id"]: [d["id"]] + wrap(d.get("holds", [])) for d in devices}
+    text.update({b["id"]: [b.get("peripheral", b["kind"].upper()), b["id"]] for b in buses})
+    lines = max(map(len, text.values()), default=1)
+
+    def cell(i):
+        return label(*text[i], *[NBSP] * (lines - len(text[i])))
+
     def dev(d):
-        if not d:
-            return "    space"
-        return f"    {node(d['id'])}[{label(d['id'], ', '.join(d.get('holds', [])) or NBSP)}]"
+        return f"    {node(d['id'])}[{cell(d['id'])}]" if d else "    space"
 
     def bus(b):
-        return f"    {node(b['id'])}[/{label(b.get('peripheral', b['kind'].upper()), b['id'])}/]" if b else "    space"
+        return f"    {node(b['id'])}[/{cell(b['id'])}/]" if b else "    space"
 
     out = ["block-beta", "  columns 5", "  block:left", "    columns 1"]
     out += [dev(d) for _, d in rows[0]]

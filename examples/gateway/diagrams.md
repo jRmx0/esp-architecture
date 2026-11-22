@@ -31,27 +31,27 @@ block-beta
   columns 5
   block:left
     columns 1
-    n_sim7600["sim7600<br/>&nbsp;"]
-    n_user_led["user_led<br/>&nbsp;"]
-    n_autopilot_board["autopilot_board<br/>&nbsp;"]
+    n_sim7600["sim7600<br/>&nbsp;<br/>&nbsp;"]
+    n_user_led["user_led<br/>&nbsp;<br/>&nbsp;"]
+    n_autopilot_board["autopilot_board<br/>&nbsp;<br/>&nbsp;"]
   end
   block:chip:3
     columns 3
-    n_uart_modem[/"UART1<br/>uart_modem"/]
+    n_uart_modem[/"UART1<br/>uart_modem<br/>&nbsp;"/]
     chip_title["<b>ESP32</b>"]
-    n_spi_mem[/"SPI0/1<br/>spi_mem"/]
-    n_gpio_board[/"GPIO<br/>gpio_board"/]
+    n_spi_mem[/"SPI0/1<br/>spi_mem<br/>&nbsp;"/]
+    n_gpio_board[/"GPIO<br/>gpio_board<br/>&nbsp;"/]
     space
     space
-    n_uart2_board[/"UART2<br/>uart2_board"/]
+    n_uart2_board[/"UART2<br/>uart2_board<br/>&nbsp;"/]
     space
-    n_uart0_console[/"UART0<br/>uart0_console"/]
+    n_uart0_console[/"UART0<br/>uart0_console<br/>&nbsp;"/]
   end
   block:right
     columns 1
-    n_flash["flash<br/>2 OTA slots, NVS, core dump, storage"]
-    n_psram["psram<br/>large heap buffers"]
-    n_ch9102["ch9102<br/>&nbsp;"]
+    n_flash["flash<br/>2 OTA slots, NVS,<br/>core dump, storage"]
+    n_psram["psram<br/>large heap buffers<br/>&nbsp;"]
+    n_ch9102["ch9102<br/>&nbsp;<br/>&nbsp;"]
   end
   style left fill:none,stroke:none
   style right fill:none,stroke:none

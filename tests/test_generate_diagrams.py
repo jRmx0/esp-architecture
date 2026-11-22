@@ -62,7 +62,7 @@ class Render(unittest.TestCase):
         self.assertNotIn("n_ui", block)
         self.assertNotIn("n_flash", block)
         left = block.split("block:left")[1].split("\n  end")[0]
-        self.assertIn('n_nor["nor<br/>&nbsp;"]', left)
+        self.assertIn('n_nor["nor<br/>&nbsp;"]', left)  # padded to the bus's two lines
         self.assertIn("n_spi2 --- n_nor", block)
         self.assertNotIn("Red buses", self.text)
         org = self.text.split("## Organigram")[1].split("## Layering")[0]
@@ -113,6 +113,13 @@ class Render(unittest.TestCase):
         self.assertIn("class n_mcu planned", block)
         self.assertIn("class n_modem,n_led device", block)
         self.assertNotIn("shared", block)  # two devices on GPIO pins do not contend
+
+    def test_block_holds_wrap_and_every_cell_is_padded(self):
+        m = copy.deepcopy(FULL)
+        m["hardware"]["devices"][0]["holds"] = ["2 OTA slots", "NVS", "core dump", "storage"]
+        block = gd.render(m, "x").split("## Block")[1].split("```")[1]
+        self.assertIn('n_nor["nor<br/>2 OTA slots, NVS,<br/>core dump, storage"]', block)
+        self.assertIn('n_spi2[/"SPI<br/>spi2<br/>&nbsp;"/]', block)
 
     def test_block_without_hardware_still_names_the_processor(self):
         m = copy.deepcopy(FULL)

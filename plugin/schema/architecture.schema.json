@@ -219,6 +219,9 @@
           "description": {
             "type": "string",
             "minLength": 1
+          },
+          "decisions": {
+            "$ref": "#/$defs/decisions"
           }
         }
       }

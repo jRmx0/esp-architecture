@@ -109,7 +109,7 @@ def block(m):
         out += ["  end", "  style outside fill:none,stroke:none"]
     out += [f"  {node(c['id'])} --> {node(h)}" for c in m["components"] for h in c.get("hardware", [])]
     out += [f"  {node(d['bus'])} --- {node(d['id'])}" for d in devices]
-    out += ["  classDef title fill:none,stroke:none", "  classDef device fill:#fff,stroke:#666,stroke-dasharray:4 3",
+    out += ["  classDef title fill:none,stroke:none", "  classDef device fill:none,stroke:#888,stroke-dasharray:4 3",
             "  class chip_title title"]
     if devices:
         out.append(f"  class {','.join(node(d['id']) for d in devices)} device")
@@ -163,7 +163,7 @@ def layering(m):
             out += [f"    {node(c)}[{label(c)}]" for c in chunk]
             out += ["    space"] * (per_line - len(chunk))
         out.append("  end")
-    out += ["  classDef title fill:#eee,stroke:#999", f"  class {','.join('t_' + l['id'] for l, _ in rows)} title"]
+    out += ["  classDef title fill:none,stroke:#888,font-weight:bold", f"  class {','.join('t_' + l['id'] for l, _ in rows)} title"]
     table = "\n".join(f"| `{l['id']}` | {l['description']} |" for l, _ in rows)
     return fence(out) + "\n\n| Layer | Holds |\n|---|---|\n" + table
 

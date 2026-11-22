@@ -89,7 +89,7 @@ block-beta
   n_board --> n_gpio_board
   n_uart_modem --- n_sim7600
   classDef title fill:none,stroke:none
-  classDef device fill:#fff,stroke:#666,stroke-dasharray:4 3
+  classDef device fill:none,stroke:#888,stroke-dasharray:4 3
   class chip_title title
   class n_sim7600 device
 ```
@@ -228,7 +228,7 @@ block-beta
     space
     space
   end
-  classDef title fill:#eee,stroke:#999
+  classDef title fill:none,stroke:#888,font-weight:bold
   class t_l4_app,t_l3_services,t_l2_codecs,t_l1_links,t_l0_platform title
 ```
 

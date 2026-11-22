@@ -105,15 +105,17 @@ def organigram(m):
 
 
 def layering(m):
-    out = ["flowchart TB"]
+    out, firsts = ["flowchart TB"], []
     for layer in m["layers"]:
-        members = [c for c in m["components"] if c["layer"] == layer["id"]]
+        members = [node(c["id"]) for c in m["components"] if c["layer"] == layer["id"]] or [f"empty_{layer['id']}"]
+        firsts.append(members[0])
         # no direction override: in TB, unlinked nodes of one rank form a row
         out.append(f"  subgraph L_{layer['id']}[{label('<b>' + layer['id'] + '</b>: ' + layer['description'])}]")
-        out += [f"    {node(c['id'])}[{label(c['id'])}]" for c in members] or [f"    empty_{layer['id']}[ ]"]
+        out += [f"    {n}[{label(n[2:])}]" if n.startswith("n_") else f"    {n}[ ]" for n in members]
         out.append("  end")
-    ids = [f"L_{l['id']}" for l in m["layers"]]
-    out += [f"  {a} ~~~ {b}" for a, b in zip(ids, ids[1:])]  # invisible links keep the layers stacked in order
+    # invisible links between one node per layer stack the layers; links between the subgraphs
+    # themselves leave empty space under some layers in GitHub's renderer
+    out += [f"  {a} ~~~ {b}" for a, b in zip(firsts, firsts[1:])]
     return fence(out)
 
 

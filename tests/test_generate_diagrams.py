@@ -54,7 +54,7 @@ class Render(unittest.TestCase):
         self.assertIn("| `ui_task` | ui | 3 | 4096 |", block)
 
     def test_layers_stacked_in_manifest_order(self):
-        self.assertIn("L_app ~~~ L_drivers", self.text)
+        self.assertIn("n_ui ~~~ n_flash", self.text)
 
     def test_heading_level(self):
         self.assertIn("\n### Context\n", gd.render(copy.deepcopy(FULL), "x", level=3))

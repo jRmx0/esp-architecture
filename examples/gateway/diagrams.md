@@ -181,10 +181,10 @@ flowchart TB
     n_gw_tasks["gw_tasks"]
     n_gw_link["gw_link"]
   end
-  L_l4_app ~~~ L_l3_services
-  L_l3_services ~~~ L_l2_codecs
-  L_l2_codecs ~~~ L_l1_links
-  L_l1_links ~~~ L_l0_platform
+  n_app_main ~~~ n_mqtt_link
+  n_mqtt_link ~~~ n_rmx_codec
+  n_rmx_codec ~~~ n_cell
+  n_cell ~~~ n_board
 ```
 
 <!-- esp-architecture:diagrams end -->

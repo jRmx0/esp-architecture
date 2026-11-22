@@ -1,4 +1,4 @@
-"""Validate an .esp-architecture/architecture.yaml: JSON Schema first, then cross-references and layer rules.
+"""Validate an .esp-architecture/manifest/architecture.yaml: JSON Schema first, then cross-references and layer rules.
 
 usage: python validate_manifest.py <architecture.yaml>
 Exit 0 when valid, 1 with one error per line otherwise.

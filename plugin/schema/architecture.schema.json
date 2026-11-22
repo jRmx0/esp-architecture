@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/jRmx0/esp-architecture/plugin/schema/architecture.schema.json",
   "title": "ESP-IDF project architecture",
-  "description": ".esp-architecture/architecture.yaml: the single source of truth for an ESP-IDF project's architecture. Cross-references (layer, depends_on, hardware, flows) are checked by validate_manifest.py, not by this schema.",
+  "description": ".esp-architecture/manifest/architecture.yaml: the single source of truth for an ESP-IDF project's architecture. Cross-references (layer, depends_on, hardware, flows) are checked by validate_manifest.py, not by this schema.",
   "type": "object",
   "additionalProperties": false,
   "required": [

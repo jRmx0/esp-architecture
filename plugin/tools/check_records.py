@@ -2,7 +2,7 @@
 
 usage: python check_records.py [--project DIR]
 
-Reads <project>/.esp-architecture/architecture.yaml, .esp-architecture/requirements.md and .esp-architecture/decisions/DEC-nnn-*.md.
+Reads <project>/.esp-architecture/manifest/architecture.yaml, .esp-architecture/requirements/requirements.md and .esp-architecture/decisions/DEC-nnn-*.md.
 Exit 0 when every component, layer and subsystem cites a decision, every cited ID exists,
 and every decision cites a requirement; 1 with one error per line otherwise; 2 on bad usage.
 
@@ -65,7 +65,7 @@ def section(text, name):
 def check(root, manifest):
     """Return a list of error strings; empty means every decision is backed."""
     arch = root / ".esp-architecture"
-    req_list = requirement_ids(arch / "requirements.md")
+    req_list = requirement_ids(arch / "requirements" / "requirements.md")
     reqs = set(req_list)
     errors = [f"requirements.md: {r} used twice" for r in sorted(reqs) if req_list.count(r) > 1]
     records, rec_errors = decision_records(arch / "decisions")
@@ -101,7 +101,7 @@ def main(argv):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--project", default=".")
     root = pathlib.Path(ap.parse_args(argv[1:]).project).resolve()
-    path = root / ".esp-architecture" / "architecture.yaml"
+    path = root / ".esp-architecture" / "manifest" / "architecture.yaml"
     try:
         manifest = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     except (OSError, yaml.YAMLError) as e:

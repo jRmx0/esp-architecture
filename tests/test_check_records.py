@@ -36,9 +36,9 @@ def record(dec, reqs="F-REQ-001"):
 
 
 FILES = {
-    "arch/requirements.md": REQS,
-    "arch/decisions/DEC-001-one-layer.md": record("DEC-001", "F-REQ-001, NF-REQ-002"),
-    "arch/decisions/DEC-002-ui-component.md": record("DEC-002", "F-REQ-001, NF-REQ-002"),
+    ".esp-architecture/requirements.md": REQS,
+    ".esp-architecture/decisions/DEC-001-one-layer.md": record("DEC-001", "F-REQ-001, NF-REQ-002"),
+    ".esp-architecture/decisions/DEC-002-ui-component.md": record("DEC-002", "F-REQ-001, NF-REQ-002"),
 }
 
 
@@ -46,7 +46,7 @@ class Project:
     def __init__(self, manifest=MANIFEST, files=FILES):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = pathlib.Path(self.tmp.name)
-        self.write("arch/architecture.yaml", yaml.safe_dump(manifest))
+        self.write(".esp-architecture/architecture.yaml", yaml.safe_dump(manifest))
         for path, text in files.items():
             self.write(path, text)
 
@@ -56,7 +56,7 @@ class Project:
         p.write_text(text, encoding="utf-8")
 
     def errors(self):
-        return cr.check(self.root, yaml.safe_load((self.root / "arch/architecture.yaml").read_text()))
+        return cr.check(self.root, yaml.safe_load((self.root / ".esp-architecture/architecture.yaml").read_text()))
 
     def run(self):
         out = io.StringIO()
@@ -93,68 +93,68 @@ class Records(unittest.TestCase):
 
     def test_dangling_ids_in_manifest(self):
         with Project(manifest=edit(components={"decisions": ["DEC-009"], "requirements": ["F-REQ-009"]})) as p:
-            self.assertEqual(p.errors(), ["component ui: DEC-009 has no record in arch/decisions",
+            self.assertEqual(p.errors(), ["component ui: DEC-009 has no record in .esp-architecture/decisions",
                                           "component ui: F-REQ-009 is not in requirements.md"])
 
     def test_decision_must_cite_existing_requirement(self):
         with Project() as p:
-            p.write("arch/decisions/DEC-002-ui-component.md", record("DEC-002", "F-REQ-007"))
+            p.write(".esp-architecture/decisions/DEC-002-ui-component.md", record("DEC-002", "F-REQ-007"))
             self.assertEqual(p.errors(), ["DEC-002-ui-component.md: F-REQ-007 is not in requirements.md"])
-            p.write("arch/decisions/DEC-002-ui-component.md", record("DEC-002", "none yet"))
+            p.write(".esp-architecture/decisions/DEC-002-ui-component.md", record("DEC-002", "none yet"))
             self.assertEqual(p.errors(), ["DEC-002-ui-component.md: cites no requirement"])
 
     def test_requirement_outside_requirements_section_does_not_count(self):
         with Project() as p:
-            p.write("arch/decisions/DEC-002-ui-component.md",
+            p.write(".esp-architecture/decisions/DEC-002-ui-component.md",
                     record("DEC-002", "none").replace("Why.", "Why: F-REQ-001."))
             self.assertEqual(p.errors(), ["DEC-002-ui-component.md: cites no requirement"])
 
     def test_only_table_rows_define_requirements(self):
         with Project() as p:
-            p.write("arch/requirements.md", REQS + "\n## F-REQ-003 Old heading form\nSee F-REQ-004.\n")
-            self.assertEqual(cr.requirement_ids(p.root / "arch/requirements.md"), ["F-REQ-001", "NF-REQ-002"])
-            p.write("arch/requirements.md", REQS + req_row("REQ-003", "No kind prefix"))
-            self.assertEqual(cr.requirement_ids(p.root / "arch/requirements.md"), ["F-REQ-001", "NF-REQ-002"])
+            p.write(".esp-architecture/requirements.md", REQS + "\n## F-REQ-003 Old heading form\nSee F-REQ-004.\n")
+            self.assertEqual(cr.requirement_ids(p.root / ".esp-architecture/requirements.md"), ["F-REQ-001", "NF-REQ-002"])
+            p.write(".esp-architecture/requirements.md", REQS + req_row("REQ-003", "No kind prefix"))
+            self.assertEqual(cr.requirement_ids(p.root / ".esp-architecture/requirements.md"), ["F-REQ-001", "NF-REQ-002"])
 
     def test_requirement_served_by_no_decision(self):
         with Project() as p:
-            p.write("arch/requirements.md", REQS + req_row("F-REQ-003", "Log faults"))
+            p.write(".esp-architecture/requirements.md", REQS + req_row("F-REQ-003", "Log faults"))
             self.assertEqual(p.errors(), ["requirements.md: F-REQ-003 is served by no decision"])
 
     def test_rules_section_cites_catalog_rules(self):
         with Project() as p:
-            p.write("arch/decisions/DEC-002-ui-component.md",
+            p.write(".esp-architecture/decisions/DEC-002-ui-component.md",
                     record("DEC-002", "F-REQ-001") + "\n## Rules\n- RULE-001\n- RULE-999\n")
             self.assertEqual(p.errors(), ["DEC-002-ui-component.md: RULE-999 is not in the rule catalog"])
 
     def test_missing_sections(self):
         with Project() as p:
-            p.write("arch/decisions/DEC-002-ui-component.md", "# DEC-002 X\n\n## Requirements\nF-REQ-001\n")
+            p.write(".esp-architecture/decisions/DEC-002-ui-component.md", "# DEC-002 X\n\n## Requirements\nF-REQ-001\n")
             self.assertEqual(p.errors(), ["DEC-002-ui-component.md: missing sections Context, Decision, Alternatives"])
 
     def test_record_name_and_heading(self):
         with Project() as p:
-            p.write("arch/decisions/notes.md", "")
-            p.write("arch/decisions/DEC-002-ui-component.md", record("DEC-003"))
+            p.write(".esp-architecture/decisions/notes.md", "")
+            p.write(".esp-architecture/decisions/DEC-002-ui-component.md", record("DEC-003"))
             self.assertEqual(p.errors(), ["DEC-002-ui-component.md: first heading must be '# DEC-002 <title>'",
                                           "notes.md: name must be DEC-nnn-slug.md"])
 
     def test_duplicate_ids(self):
         with Project() as p:
-            p.write("arch/requirements.md", REQS + req_row("F-REQ-001", "Again"))
-            p.write("arch/decisions/DEC-001-again.md", record("DEC-001"))
+            p.write(".esp-architecture/requirements.md", REQS + req_row("F-REQ-001", "Again"))
+            p.write(".esp-architecture/decisions/DEC-001-again.md", record("DEC-001"))
             self.assertEqual(p.errors(), ["requirements.md: F-REQ-001 used twice", "DEC-001-one-layer.md: DEC-001 used twice"])
 
     def test_no_records_at_all(self):
         with Project(files={}) as p:
-            self.assertEqual(p.errors(), ["subsystem core: DEC-001 has no record in arch/decisions",
-                                          "layer app: DEC-001 has no record in arch/decisions",
-                                          "component ui: DEC-002 has no record in arch/decisions",
+            self.assertEqual(p.errors(), ["subsystem core: DEC-001 has no record in .esp-architecture/decisions",
+                                          "layer app: DEC-001 has no record in .esp-architecture/decisions",
+                                          "component ui: DEC-002 has no record in .esp-architecture/decisions",
                                           "component ui: F-REQ-001 is not in requirements.md"])
 
     def test_invalid_manifest_stops_the_check(self):
         with Project() as p:
-            p.write("arch/architecture.yaml", "version: 1\n")
+            p.write(".esp-architecture/architecture.yaml", "version: 1\n")
             code, out = p.run()
             self.assertEqual(code, 1)
             self.assertIn("Fix the manifest first", out)

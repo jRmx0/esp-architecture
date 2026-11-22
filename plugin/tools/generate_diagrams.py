@@ -1,8 +1,8 @@
-"""Generate Mermaid diagrams from arch/architecture.yaml: context, block (levels 1 and 2), organigram, layering.
+"""Generate Mermaid diagrams from .esp-architecture/architecture.yaml: context, block (levels 1 and 2), organigram, layering.
 
 usage: python generate_diagrams.py [--project DIR] [--manifest FILE] [--out FILE] [--level N] [--check | --as-is]
 
-Writes a marked section into --out (default <project>/arch/diagrams.md). An existing file keeps
+Writes a marked section into --out (default <project>/.esp-architecture/diagrams.md). An existing file keeps
 everything outside the markers, so the section can live inside a wiki page.
 --check   exit 1 when the section differs from what the manifest generates (stale diagrams)
 --as-is   print the include graph the code has now (from check_architecture), for discovery
@@ -261,8 +261,8 @@ def main(argv):
     mode.add_argument("--as-is", action="store_true")
     args = ap.parse_args(argv[1:])
     root = pathlib.Path(args.project).resolve()
-    manifest_path = pathlib.Path(args.manifest).resolve() if args.manifest else root / "arch" / "architecture.yaml"
-    out_path = pathlib.Path(args.out).resolve() if args.out else root / "arch" / "diagrams.md"
+    manifest_path = pathlib.Path(args.manifest).resolve() if args.manifest else root / ".esp-architecture" / "architecture.yaml"
+    out_path = pathlib.Path(args.out).resolve() if args.out else root / ".esp-architecture" / "diagrams.md"
 
     try:
         m = yaml.safe_load(manifest_path.read_text(encoding="utf-8")) or {}

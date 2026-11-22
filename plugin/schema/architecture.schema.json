@@ -328,7 +328,7 @@
             "uniqueItems": true,
             "items": {
               "type": "string",
-              "pattern": "^REQ-[0-9]{3}$"
+              "pattern": "^(NF|F)-REQ-[0-9]{3}$"
             }
           },
           "decisions": {

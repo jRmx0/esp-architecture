@@ -26,8 +26,8 @@ Inside the chip: components and the buses they drive; outside: devices on those 
 
 ```mermaid
 block-beta
-  columns 6
-  block:chip:6
+  columns 1
+  block:chip
     columns 6
     chip_title["<b>rmx-mower-gateway</b>"]:6
     n_app_main["app_main"]
@@ -73,12 +73,16 @@ block-beta
     space
     space
   end
-  n_sim7600["sim7600<br/>SIM7600G-H LTE modem"]
-  space
-  space
-  space
-  space
-  space
+  block:outside
+    columns 6
+    n_sim7600["sim7600<br/>SIM7600G-H LTE modem"]
+    space
+    space
+    space
+    space
+    space
+  end
+  style outside fill:none,stroke:none
   n_devcert --> n_uart0_console
   n_cell --> n_sim7600
   n_bl_uart --> n_uart2_board

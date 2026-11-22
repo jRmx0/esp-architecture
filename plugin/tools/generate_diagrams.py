@@ -68,7 +68,7 @@ def block(m):
     rows = [r for r in rows if r]
     width = max(1, min(PER_LINE, max([len(r) for r in rows] + [len(buses)])))
 
-    out = ["block-beta", f"  columns {width}", f"  block:chip:{width}", f"    columns {width}",
+    out = ["block-beta", "  columns 1", "  block:chip", f"    columns {width}",
            f"    chip_title[{label('<b>' + m['system']['name'] + '</b>')}]:{width}"]
     column = {}  # component id -> its column in the grid
     for r in rows:
@@ -98,11 +98,15 @@ def block(m):
         out += [f"    {node(b)}[/{label(b, kinds[b])}/]" if b else "    space" for b in line]
     out.append("  end")
     bus_col = {b: c for line in bus_lines for c, b in enumerate(line) if b}
-    # devices sit outside the chip, under their bus (or under the component that drives them)
-    for line in aligned([d["id"] for d in devices],
-                        lambda d: bus_col.get(next(x["bus"] for x in devices if x["id"] == d), 0)):
-        out += [f"  {node(d)}[{label(d, next(x['description'] for x in devices if x['id'] == d))}]" if d else "  space"
-                for d in line]
+    # devices sit outside the chip, under their bus. They need a block of their own: a plain
+    # block next to the chip in the outer grid is drawn as tall as the chip.
+    if devices:
+        out += ["  block:outside", f"    columns {width}"]
+        for line in aligned([d["id"] for d in devices],
+                            lambda d: bus_col.get(next(x["bus"] for x in devices if x["id"] == d), 0)):
+            out += [f"    {node(d)}[{label(d, next(x['description'] for x in devices if x['id'] == d))}]"
+                    if d else "    space" for d in line]
+        out += ["  end", "  style outside fill:none,stroke:none"]
     out += [f"  {node(c['id'])} --> {node(h)}" for c in m["components"] for h in c.get("hardware", [])]
     out += [f"  {node(d['bus'])} --- {node(d['id'])}" for d in devices]
     out += ["  classDef title fill:none,stroke:none", "  classDef device fill:#fff,stroke:#666,stroke-dasharray:4 3",

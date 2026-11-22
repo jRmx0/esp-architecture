@@ -4,6 +4,7 @@
 # Mower-Gateway-Architecture §3 (layers and target graph), §1.2 (tasks) and the
 # repo's CLAUDE.md (hardware), at commit 725a2ce. Not invented: where §3 is
 # silent (e.g. dependencies of monitor, gw_tasks), the edge is left out.
+# `sources` map each module to its files in main/ at that commit.
 # The validator reports one real conflict in it: cell (L1) depends on usage (L3).
 version: 1
 system:

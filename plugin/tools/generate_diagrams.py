@@ -65,28 +65,50 @@ def block(m):
     hw = m.get("hardware", {})
     buses, devices = hw.get("buses", []), hw.get("devices", [])
     rows = [[c["id"] for c in m["components"] if c["layer"] == l["id"]] for l in m["layers"]]
-    rows = [r for r in rows if r] + ([[b["id"] for b in buses]] if buses else [])
-    width = max(1, min(PER_LINE, max([len(r) for r in rows] + [len(devices)])))
-    bus_ids = {b["id"] for b in buses}
+    rows = [r for r in rows if r]
+    width = max(1, min(PER_LINE, max([len(r) for r in rows] + [len(buses)])))
 
-    def cell(i):
-        if i in bus_ids:
-            kind = next(b["kind"] for b in buses if b["id"] == i)
-            return f"{node(i)}[/{label(i, kind)}/]"
-        return f"{node(i)}[{label(i)}]"
-
-    out = ["block-beta", "  columns 1", "  block:chip", f"    columns {width}",
+    out = ["block-beta", f"  columns {width}", f"  block:chip:{width}", f"    columns {width}",
            f"    chip_title[{label('<b>' + m['system']['name'] + '</b>')}]:{width}"]
+    column = {}  # component id -> its column in the grid
     for r in rows:
-        out += grid_rows([cell(i) for i in r], width)
+        out += grid_rows([f"{node(i)}[{label(i)}]" for i in r], width)
+        column.update({i: n % width for n, i in enumerate(r)})
+
+    def aligned(items, want):
+        """Place each item in its wanted column when free, else the next free one; wrap if full."""
+        lines = []
+        for item in items:
+            col = want(item)
+            for line in lines:
+                free = [c for c in range(width) if line[c] is None]
+                if free:
+                    line[next((c for c in free if c >= col), free[0])] = item
+                    break
+            else:
+                lines.append([None] * width)
+                lines[-1][col if col is not None else 0] = item
+        return lines
+
+    # buses sit in the column of the component that drives them, so the link drops straight down
+    drivers = {h: c["id"] for c in reversed(m["components"]) for h in c.get("hardware", [])}
+    bus_lines = aligned([b["id"] for b in buses], lambda b: column.get(drivers.get(b), 0))
+    kinds = {b["id"]: b["kind"] for b in buses}
+    for line in bus_lines:
+        out += [f"    {node(b)}[/{label(b, kinds[b])}/]" if b else "    space" for b in line]
     out.append("  end")
-    if devices:
-        out += ["  space", "  block:outside", f"    columns {width}"]
-        out += grid_rows([f"{node(d['id'])}{{{{{label(d['id'], d['description'])}}}}}" for d in devices], width)
-        out.append("  end")
+    bus_col = {b: c for line in bus_lines for c, b in enumerate(line) if b}
+    # devices sit outside the chip, under their bus (or under the component that drives them)
+    for line in aligned([d["id"] for d in devices],
+                        lambda d: bus_col.get(next(x["bus"] for x in devices if x["id"] == d), 0)):
+        out += [f"  {node(d)}[{label(d, next(x['description'] for x in devices if x['id'] == d))}]" if d else "  space"
+                for d in line]
     out += [f"  {node(c['id'])} --> {node(h)}" for c in m["components"] for h in c.get("hardware", [])]
     out += [f"  {node(d['bus'])} --- {node(d['id'])}" for d in devices]
-    out += ["  classDef title fill:none,stroke:none", "  class chip_title title"]
+    out += ["  classDef title fill:none,stroke:none", "  classDef device fill:#fff,stroke:#666,stroke-dasharray:4 3",
+            "  class chip_title title"]
+    if devices:
+        out.append(f"  class {','.join(node(d['id']) for d in devices)} device")
     return fence(out)
 
 

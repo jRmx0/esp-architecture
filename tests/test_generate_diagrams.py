@@ -51,7 +51,7 @@ class Render(unittest.TestCase):
         self.assertIn("n_spi2[/", inside)
         self.assertIn("n_ui[", inside)
         self.assertNotIn("n_nor", inside)
-        self.assertIn("n_nor{{", block.split("block:outside")[1])
+        self.assertIn("n_nor[", block.split("block:chip")[1].split("\n  end")[1])
         self.assertIn("n_spi2 --- n_nor", block)
         self.assertIn("n_flash --> n_spi2", block)
         self.assertIn("| `ui_task` | ui | 3 | 4096 |", block)
@@ -60,6 +60,24 @@ class Render(unittest.TestCase):
         inside = self.text.split("block:chip")[1].split("\n  end")[0]
         self.assertLess(inside.index("n_ui["), inside.index("n_flash["))
         self.assertLess(inside.index("n_flash["), inside.index("n_spi2[/"))
+
+    def test_bus_and_device_sit_under_their_driver(self):
+        m = copy.deepcopy(FULL)
+        m["components"][1]["hardware"] = []
+        m["components"] += [
+            {"id": "a", "layer": "drivers", "description": "a"},
+            {"id": "b", "layer": "drivers", "description": "b", "hardware": ["spi2"]},
+        ]
+        block = gd.render(m, "x").split("## Block")[1].split("```")[1]
+        cells = [l.strip() for l in block.splitlines()
+                 if l.startswith(("    n_", "    space", "  n_", "  space")) and "--" not in l]
+        width = 3  # drivers row: flash, a, b
+        # row 0: ui + 2 space; row 1: flash a b; bus row: spi2 under b (column 2); device row: nor under spi2
+        self.assertEqual(cells[6:9], ["space", "space", cells[8]])
+        self.assertTrue(cells[8].startswith("n_spi2[/"))
+        self.assertEqual(cells[9:12][:2], ["space", "space"])
+        self.assertTrue(cells[11].startswith("n_nor["))
+        self.assertEqual(len(cells), 4 * width)
 
     def test_layers_stacked_in_manifest_order(self):
         layering = self.text.split("## Layering")[1]

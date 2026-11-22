@@ -108,6 +108,12 @@ class Records(unittest.TestCase):
             p.write("arch/requirements.md", REQS + "\n## REQ-003 Log faults\nKeep the last ten.\n")
             self.assertEqual(p.errors(), ["requirements.md: REQ-003 is served by no decision"])
 
+    def test_rules_section_cites_catalog_rules(self):
+        with Project() as p:
+            p.write("arch/decisions/DEC-002-ui-component.md",
+                    record("DEC-002", "REQ-001") + "\n## Rules\n- RULE-001\n- RULE-999\n")
+            self.assertEqual(p.errors(), ["DEC-002-ui-component.md: RULE-999 is not in the rule catalog"])
+
     def test_missing_sections(self):
         with Project() as p:
             p.write("arch/decisions/DEC-002-ui-component.md", "# DEC-002 X\n\n## Requirements\nREQ-001\n")

@@ -66,6 +66,11 @@ class Render(unittest.TestCase):
         self.assertIn("n_user <--> n_cloud", ctx)  # no labels on either flow
         self.assertEqual(ctx.count("n_user -->"), 1)  # one-way flows stay single arrows
 
+    def test_context_server_is_an_icon(self):
+        m = copy.deepcopy(FULL)
+        m["context"]["actors"][1]["kind"] = "server"
+        self.assertRegex(gd.context(m), r'n_cloud@\{ img: "data:image/svg\+xml;base64,[^"]+", label: "cloud"')
+
     def test_block_level1_is_hardware_only(self):
         block = self.text.split("## Block")[1].split("## Organigram")[0]
         self.assertIn("flowchart LR", block)

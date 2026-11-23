@@ -62,6 +62,7 @@
                 "enum": [
                   "person",
                   "system",
+                  "server",
                   "device"
                 ]
               },

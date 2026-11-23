@@ -8,6 +8,7 @@ everything outside the markers, so the section can live inside a wiki page.
 --as-is   print the include graph the code has now (from check_architecture), for discovery
 """
 import argparse
+import base64
 import pathlib
 import re
 import sys
@@ -23,6 +24,12 @@ END = "<!-- esp-architecture:diagrams end -->"
 SECTION = re.compile(r"<!-- esp-architecture:diagrams begin.*?<!-- esp-architecture:diagrams end -->", re.S)
 RED = "stroke:#d33,stroke-width:2px"  # breaks a rule
 AMBER = "stroke:#d98e04,stroke-width:2px"  # shared: check contention
+# Embedded, because GitHub renders no icon packs; mid-gray reads on light and dark.
+SERVER_IMG = "data:image/svg+xml;base64," + base64.b64encode((
+    '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">' + "".join(
+        f'<rect x="4" y="{y}" width="40" height="12" rx="2" fill="#8b949e"/>'
+        f'<circle cx="11" cy="{y + 6}" r="2.5" fill="#1f6f3a"/><path d="M22 {y + 6}h16" stroke="#30363d" stroke-width="2"/>'
+        for y in (3, 18, 33)) + "</svg>").encode()).decode()
 PER_LINE = 6  # components per line in the layering grid
 
 
@@ -45,8 +52,12 @@ def context(m):
     # names only: the context diagram is about relationships, not what is inside any box
     out = ["flowchart TD", f"  {node('system')}[[{label('<b>' + m['system']['name'] + '</b>')}]]"]
     for a in ctx.get("actors", []):
+        text = label(a.get("name", a["id"]))
+        if a["kind"] == "server":
+            out.append(f'  {node(a["id"])}@{{ img: "{SERVER_IMG}", label: {text}, pos: "b", w: 48, h: 48, constraint: "on" }}')
+            continue
         o, c = shape[a["kind"]]
-        out.append(f"  {node(a['id'])}{o}{label(a.get('name', a['id']))}{c}")
+        out.append(f"  {node(a['id'])}{o}{text}{c}")
     flows = ctx.get("flows", [])
     order = list(dict.fromkeys(end for f in flows for end in (f["from"], f["to"])))
     pairs = {}  # (upper, lower) -> [flows down, flows up]; the party named first is drawn above

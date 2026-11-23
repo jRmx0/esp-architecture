@@ -53,6 +53,19 @@ class Render(unittest.TestCase):
         self.assertIn('n_system[["<b>demo</b>"]]', ctx)
         self.assertIn("n_user --> n_cloud", ctx)
 
+    def test_context_top_down_merges_opposite_flows(self):
+        m = copy.deepcopy(FULL)
+        m["context"]["actors"][1]["name"] = "my cloud"
+        m["context"]["flows"] += [{"from": "system", "to": "cloud", "data": "state"},
+                                  {"from": "cloud", "to": "system", "data": "commands"},
+                                  {"from": "cloud", "to": "user"}]
+        ctx = gd.context(m)
+        self.assertIn("flowchart TD", ctx)
+        self.assertIn('n_cloud["my cloud"]', ctx)
+        self.assertIn('n_system <-->|"↓ state<br/>↑ commands"| n_cloud', ctx)
+        self.assertIn("n_user <--> n_cloud", ctx)  # no labels on either flow
+        self.assertEqual(ctx.count("n_user -->"), 1)  # one-way flows stay single arrows
+
     def test_block_level1_is_hardware_only(self):
         block = self.text.split("## Block")[1].split("## Organigram")[0]
         self.assertIn("flowchart LR", block)

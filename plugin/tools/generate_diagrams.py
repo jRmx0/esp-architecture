@@ -43,13 +43,25 @@ def context(m):
     ctx = m.get("context", {})
     shape = {"person": ("([", "])"), "system": ("[", "]"), "device": ("{{", "}}")}
     # names only: the context diagram is about relationships, not what is inside any box
-    out = ["flowchart LR", f"  {node('system')}[[{label('<b>' + m['system']['name'] + '</b>')}]]"]
+    out = ["flowchart TD", f"  {node('system')}[[{label('<b>' + m['system']['name'] + '</b>')}]]"]
     for a in ctx.get("actors", []):
         o, c = shape[a["kind"]]
-        out.append(f"  {node(a['id'])}{o}{label(a['id'])}{c}")
-    for f in ctx.get("flows", []):
-        arrow = f"-->|{label(f['data'])}|" if f.get("data") else "-->"
-        out.append(f"  {node(f['from'])} {arrow} {node(f['to'])}")
+        out.append(f"  {node(a['id'])}{o}{label(a.get('name', a['id']))}{c}")
+    flows = ctx.get("flows", [])
+    order = list(dict.fromkeys(end for f in flows for end in (f["from"], f["to"])))
+    pairs = {}  # (upper, lower) -> [flows down, flows up]; the party named first is drawn above
+    for f in flows:
+        down = order.index(f["from"]) <= order.index(f["to"])
+        pair = (f["from"], f["to"]) if down else (f["to"], f["from"])
+        pairs.setdefault(pair, ([], []))[0 if down else 1].append(f.get("data"))
+    for (upper, lower), (down, up) in pairs.items():
+        if down and up:
+            lines = [f"{mark} {d}" for mark, ds in (("↓", down), ("↑", up)) for d in ds if d]
+            a, arrow, b = upper, "<-->", lower
+        else:
+            lines = [d for d in down or up if d]
+            a, arrow, b = (upper, "-->", lower) if down else (lower, "-->", upper)
+        out.append(f"  {node(a)} {arrow}{'|' + label(*lines) + '|' if lines else ''} {node(b)}")
     return fence(out)
 
 
